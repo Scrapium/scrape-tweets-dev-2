@@ -1,11 +1,8 @@
 package com.scrapium;
+
 public class Main {
-
-    // Define the thread pool with a fixed number of threads
-
     public static void main(String[] args) {
-        Scraper scraper = new Scraper(10);
+        Scraper scraper = new Scraper(12, 500);
         scraper.scrape();
     }
-
 }
