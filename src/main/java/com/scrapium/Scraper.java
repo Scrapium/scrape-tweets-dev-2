@@ -1,23 +1,30 @@
 package com.scrapium;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scraper {
-    private ExecutorService threadPool;
-    private static final int NUM_THREADS = 10;
 
-    public Scraper() {
-        threadPool = Executors.newFixedThreadPool(NUM_THREADS);
+    private final ExecutorService threadPool;
+    public static final int maxCoroutineCount = 100000;
+    private ConcurrentLinkedQueue<TweetThreadTask> tweetQueue;
+    private final int maxThreadCount;
+    private final ProducerThread producer;
+
+    public AtomicInteger coroutineCount = new AtomicInteger(0);
+
+    public Scraper(int maxThreadCount) {
+        this.maxThreadCount = maxThreadCount;
+        this.threadPool = Executors.newFixedThreadPool(maxThreadCount);
+        this.tweetQueue = new ConcurrentLinkedQueue<>();
+        this.producer = new ProducerThread(this, tweetQueue, coroutineCount);
     }
 
     public void scrape() {
-        // Submit tasks to the thread pool using the submit() method
-        for (int i = 0; i < 100000000; i++) {
-            System.out.println("Pushing task " + i);
-            threadPool.submit(new ScraperTask(i));
+        this.tweetQueue.add(new TweetThreadTask());
+        this.producer.start();
+        for (int i = 0; i < maxThreadCount; i++) {
+            threadPool.submit(new TweetThread(this, tweetQueue, coroutineCount));
         }
     }
-
-
 }
