@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Scraper {
 
     private final ExecutorService threadPool;
-    public static final int maxCoroutineCount = 100000;
+    public static final int maxCoroutineCount = 2;
     private ConcurrentLinkedQueue<TweetThreadTask> tweetQueue;
     private final int maxThreadCount;
     private final ProducerThread producer;

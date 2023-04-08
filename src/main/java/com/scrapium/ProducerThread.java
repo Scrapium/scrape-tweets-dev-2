@@ -20,15 +20,15 @@ public class ProducerThread extends Thread {
     public void run() {
         while(true){
             if(coroutineCount.get() < scraper.maxCoroutineCount) {
-                for (int i = 0; i < 500; i++) {
-                    System.out.println("Producer: Added task " + current_thread_id++);
+                for (int i = 0; i < scraper.maxCoroutineCount - coroutineCount.get(); i++) {
+                    //System.out.println("Producer: Added task " + current_thread_id++);
                     this.taskQueue.add(new TweetThreadTask());
                     coroutineCount.set(coroutineCount.get() + 1);
                 }
             } else {
                 try {
                     Thread.sleep(500);
-                    System.out.println("Producer: Not adding, queue full");
+                    //System.out.println("Producer: Not adding, queue full");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
