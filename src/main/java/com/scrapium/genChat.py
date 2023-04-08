@@ -17,3 +17,9 @@ for file in files_with_extension:
         print(line.replace("\n", ""))
 
     print("\n")
+
+print("The program returns 'EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ff94db31765, pid=86132, tid=86508")
+
+print("Do you see the problem is the given code?")
+
+print("\n\n")

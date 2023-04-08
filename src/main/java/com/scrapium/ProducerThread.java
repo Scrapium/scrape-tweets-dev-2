@@ -3,7 +3,7 @@ package com.scrapium;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProducerThread extends Thread {
+public class ProducerThread implements Runnable {
 
     private AtomicInteger coroutineCount;
     private int current_thread_id = 0;

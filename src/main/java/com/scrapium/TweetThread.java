@@ -58,8 +58,8 @@ public class TweetThread implements Runnable {
                         public void onResponse(Call call, Response response) throws IOException {
                             // Handle the response from the Twitter API
                             String responseBody = response.body().string();
-                            System.out.println(responseBody);
-
+                            //System.out.println(responseBody);
+                            System.out.println(response.code());
                             // Parse the response and add the tweets to the tweetQueue
                             // ...
 
