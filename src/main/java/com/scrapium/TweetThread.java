@@ -1,6 +1,7 @@
 package com.scrapium;
 
 import com.scrapium.Scraper;
+import com.scrapium.utils.SLog;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,21 +23,19 @@ public class TweetThread implements Runnable {
         while (true) {
             try {
                 if (coroutineCount.get() > 0) {
-                    System.out.println("TweetThread: Ran cycle");
+                    SLog.log("TweetThread: Ran cycle");
 
                     TweetThreadTask task = taskQueue.take();
-                    System.out.println("TweetThread: Task Taken");
+                    SLog.log("TweetThread: Task Taken");
 
-                    //coroutineCount.incrementAndGet();
                     task.perform();
-                    //coroutineCount.decrementAndGet();
 
-                    System.out.println("Decrementing counter");
+                    SLog.log("Decrementing counter");
                 } else {
                     Thread.sleep(10); // Sleep when the maximum number of tasks are being executed
                 }
             } catch (InterruptedException e) {
-                System.out.println("Interrupted Exception!");
+                SLog.log("Interrupted Exception!");
             }
         }
     }

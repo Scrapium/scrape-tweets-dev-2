@@ -1,5 +1,6 @@
 package com.scrapium;
 
+import com.scrapium.utils.SLog;
 import okhttp3.*;
 
 import java.io.IOException;
@@ -15,11 +16,11 @@ public class TweetThreadTask {
 
     public void perform() {
 
-        System.out.println("TweetThreadTask: Before attempting to increase request count.");
+        SLog.log("TweetThreadTask: Before attempting to increase request count.");
 
         //scraper.logger.increaseRequestCount();
 
-        System.out.println("TweetThreadTask: Asked to perform task.");
+        SLog.log("TweetThreadTask: Asked to perform task.");
 
         //////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +36,8 @@ public class TweetThreadTask {
             @Override
             public void onFailure(Call call, IOException e) {
 
-                System.out.println("FAIL: Scraping task completed");
+                SLog.log("FAIL: Scraping task completed");
+
 
 
                 // Handle the failure of the request
@@ -50,15 +52,18 @@ public class TweetThreadTask {
                 String responseBody = response.body().string();
                 System.out.println("SUCCESS: "+response.code());
 
+                scraper.logger.increaseRequestCount();
+
                 // Parse the response and add the tweets to the tweetQueue
                 // ...
 
                 // Print a message to indicate that the task is completed
-                System.out.println("SUCCESS: Scraping task completed");
+                SLog.log("SUCCESS: Scraping task completed");
                 scraper.coroutineCount.decrementAndGet();
                 //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
             }
         });
+
         /////////////////////////////////////////////////////////////////////////////
 
     }

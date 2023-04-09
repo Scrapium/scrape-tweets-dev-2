@@ -1,5 +1,7 @@
 package com.scrapium;
 
+import com.scrapium.utils.SLog;
+
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,10 +23,11 @@ public class Scraper {
     }
 
     public void scrape() {
-        threadPool.submit(new LoggingThread(this, tweetQueue, coroutineCount));
+        this.logger = new LoggingThread(this, tweetQueue, coroutineCount);
+        threadPool.submit(this.logger);
         threadPool.submit(new ProducerThread(this, tweetQueue, coroutineCount));
         for (int i = 0; i < consumerCount; i++) {
-            System.out.println("Scraper: Created consumer thread.");
+            SLog.log("Scraper: Created consumer thread.");
             threadPool.submit(new TweetThread(this, tweetQueue, coroutineCount));
         }
     }

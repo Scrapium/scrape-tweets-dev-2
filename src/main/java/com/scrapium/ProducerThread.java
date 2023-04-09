@@ -1,5 +1,7 @@
 package com.scrapium;
 
+import com.scrapium.utils.SLog;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,10 +20,10 @@ public class ProducerThread implements Runnable {
     @Override
     public void run() {
         while (true) {
-            //System.out.println("Coroutine count: " + coroutineCount.get());
+            //SLog.log("Coroutine count: " + coroutineCount.get());
             if (coroutineCount.get() < scraper.maxCoroutineCount + 10) {
                 for (int i = 0; i < scraper.maxCoroutineCount - coroutineCount.get(); i++) {
-                    System.out.println("Producer: Added item to TaskQueue");
+                    SLog.log("Producer: Added item to TaskQueue");
                     this.taskQueue.add(new TweetThreadTask(this.scraper));
                     coroutineCount.incrementAndGet();
                 }

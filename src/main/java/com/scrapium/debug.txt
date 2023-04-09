@@ -16,17 +16,17 @@ public class debug {
                 .addHeader("x-guest-token", "1644721723684577281")
                 .build();
 
-        System.out.println("Step 1");
+        SLog.log("Step 1");
         try {
-            System.out.println("Step 2");
+            SLog.log("Step 2");
 
             Response response = client.newCall(request).execute();
             String resStr = response.body().string();
-            System.out.println("code: " + response.code());
+            SLog.log("code: " + response.code());
             System.out.print(resStr);
 
         } catch (Exception e) {
-            System.out.println("ERROR");
+            SLog.log("ERROR");
             System.out.println(e.getMessage());
             System.out.println();
             if(e instanceof UnknownHostException){
@@ -60,7 +60,7 @@ public class debug {
 
 
         } catch (Exception e) {
-            System.out.println("ERROR");
+            SLog.log("ERROR");
             System.out.println(e.getMessage());
             System.out.println();
         }
