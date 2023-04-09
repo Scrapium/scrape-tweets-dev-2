@@ -18,10 +18,11 @@ public class ProducerThread implements Runnable {
     @Override
     public void run() {
         while (true) {
-            System.out.println("Coroutine count: " + coroutineCount.get());
-            if (coroutineCount.get() < scraper.maxCoroutineCount) {
+            //System.out.println("Coroutine count: " + coroutineCount.get());
+            if (coroutineCount.get() < scraper.maxCoroutineCount + 10) {
                 for (int i = 0; i < scraper.maxCoroutineCount - coroutineCount.get(); i++) {
-                    this.taskQueue.add(new TweetThreadTask());
+                    System.out.println("Producer: Added item to TaskQueue");
+                    this.taskQueue.add(new TweetThreadTask(this.scraper));
                     coroutineCount.incrementAndGet();
                 }
             } else {

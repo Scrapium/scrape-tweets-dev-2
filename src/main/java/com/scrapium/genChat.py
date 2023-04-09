@@ -20,6 +20,6 @@ for file in files_with_extension:
 
 print("This is the current code")
 
-print("Please update the code so that the TweetThreadTask.java sends a message to Scraper.java every time a TweeThreadTask is executed. In LoggingThread.java, access the variable from Scraper.java and create a total for the amount of 'requests' made per second along with the Coroutine Count (scraper.coroutineCount). Then provide the updated code for each file.")
+print("The code freezes at 'TweetThread: Task semaphore acquired' and 'Producer: Added item to TaskQueue' is never printed")
 
 print("\n\n")
