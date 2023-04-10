@@ -1,6 +1,6 @@
 package com.scrapium;
 
-import com.scrapium.utils.SLog;
+import com.scrapium.utils.DebugLogger;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -8,36 +8,46 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TweetThread  extends ThreadBase implements Runnable{
 
     private final Scraper scraper;
-    private final BlockingQueue<TweetThreadTask> taskQueue;
-    private final AtomicInteger coroutineCount;
+    private final BlockingQueue<TweetTask> taskQueue;
+    private AtomicInteger coroutineCount;
 
-    public TweetThread(Scraper scraper, BlockingQueue<TweetThreadTask> taskQueue, AtomicInteger coroutineCount) {
+    private final TweetThreadTaskProcessor taskProcessor;
+
+    // possibly move maxCoroutineCount to scraper so it doesn't need to be updated in each class - blocking.
+
+    public TweetThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
         this.scraper = scraper;
         this.taskQueue = taskQueue;
-        this.coroutineCount = coroutineCount;
+        this.coroutineCount = new AtomicInteger(0);
+        this.taskProcessor = new TweetThreadTaskProcessor(this.scraper, this.taskQueue, this.coroutineCount);
     }
 
     @Override
     public void run() {
         while (this.running) {
             try {
-                if (coroutineCount.get() > 0) {
-                    SLog.log("TweetThread: Ran cycle");
+                if (this.taskQueue.size() > 0 && this.coroutineCount.get() < scraper.maxCoroutineCount) {
+                    DebugLogger.log("TweetThread: Ran cycle");
+                    DebugLogger.log("TweetThread: Task Taken");
+                    this.taskProcessor.processNextTask();
+                    DebugLogger.log("Decrementing counter");
 
-                    TweetThreadTask task = taskQueue.take();
-
-                    SLog.log("TweetThread: Task Taken");
-
-                    task.perform();
-
-
-                    SLog.log("Decrementing counter");
                 } else {
-                    SLog.log("Empty queue!");
-                    Thread.sleep(10); // Sleep when the maximum number of tasks are being executed
+
+                    if(this.taskQueue.size() == 0){
+                        DebugLogger.log("Skipping thread execution!");
+                        DebugLogger.log("  Reason: QUEUE EMPTY");
+                    }
+                    if(this.coroutineCount.get() >= scraper.maxCoroutineCount){
+                        //DebugLogger.log("Skipping thread execution!");
+                        //DebugLogger.log("  Reason: MAX CO-ROUTINES (" + this.coroutineCount.get() + "/" + this.maxCoroutineCount + ")");
+                    }
+
+                    Thread.sleep(50); // Sleep when the maximum number of tasks are being executed
                 }
             } catch (InterruptedException e) {
-                SLog.log("Interrupted Exception!");
+                e.printStackTrace();
+                DebugLogger.log("Interrupted Exception!");
             }
         }
     }

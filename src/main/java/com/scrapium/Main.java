@@ -1,75 +1,112 @@
 package com.scrapium;
 
+import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.message.BasicHttpRequest;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
+import org.apache.hc.core5.http.support.BasicRequestBuilder;
+import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.util.Timeout;
+
+import java.io.IOException;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class Main {
+
     public static void main(String[] args) {
-        double maxTestDurationMinutes = 0.5;
-        long testDurationMillis = (long) (maxTestDurationMinutes * 60 * 1000);
-        Map<String, Double> results = new HashMap<>();
 
-        for (int consumerCount = 1; consumerCount <= 5; consumerCount++) {
-            for (int maxCoroutineCount = 100; maxCoroutineCount <= 500; maxCoroutineCount += 100) {
-                String configKey = "C" + consumerCount + "_M" + maxCoroutineCount;
-                System.out.println("Testing configuration: " + configKey);
+        final IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
+                .setSoTimeout(Timeout.ofSeconds(5))
+                .build();
 
-                Scraper scraper = new Scraper(consumerCount, maxCoroutineCount);
+        final CloseableHttpAsyncClient client = HttpAsyncClients.custom()
+                .setIOReactorConfig(ioReactorConfig)
+                .build();
 
-                // Handle the SIGINT signal (CTRL + C)
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    System.out.println("Shutting down gracefully...");
-                    scraper.stop();
-                }));
+        client.start();
 
-                String osName = System.getProperty("os.name");
-                if (!osName.toLowerCase().contains("windows")) {
-                    // the environment is not Windows
 
-                    // Handle the SIGTSTP signal (CTRL + Z)
-                    CustomSignalHandler.handleTSTPSignal(() -> {
-                        System.out.println("SIGTSTP signal received!");
-                        System.exit(0);
-                    });
-                }
+        // scraper = new Scraper(2, 100);
+
+         //scraper.scrape();
 
 
 
+        final BasicHttpRequest request = BasicRequestBuilder.get()
+                .setHttpHost( new HttpHost("httpbin.org") )
+                .setPath("/headers")
+                .build();
 
+        System.out.println("Executing request " + request);
+        final Future<Void> future = client.execute(
+                new BasicRequestProducer(request, null),
+                new AbstractCharResponseConsumer<Void>() {
 
-                scraper.scrape();
+                    @Override
+                    protected void start(
+                            final HttpResponse response,
+                            final ContentType contentType) throws HttpException, IOException {
+                        System.out.println(request + "->" + new StatusLine(response));
+                    }
 
-                try {
-                    Thread.sleep(testDurationMillis);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                    @Override
+                    protected int capacityIncrement() {
+                        return Integer.MAX_VALUE;
+                    }
 
-                double successPS = scraper.logger.successRequestCount.get() / (double) testDurationMillis * 1000;
-                results.put(configKey, successPS);
+                    @Override
+                    protected void data(final CharBuffer data, final boolean endOfStream) throws IOException {
+                        while (data.hasRemaining()) {
+                            System.out.print(data.get());
+                        }
+                        if (endOfStream) {
+                            System.out.println();
+                        }
+                    }
 
-                scraper.stop();
+                    @Override
+                    protected Void buildResult() throws IOException {
+                        return null;
+                    }
 
-                try {
-                    Thread.sleep(8000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                    @Override
+                    public void failed(final Exception cause) {
+                        System.out.println(request + "->" + cause);
+                    }
 
-            }
+                    @Override
+                    public void releaseResources() {
+                    }
+
+                }, null);
+
+        System.out.println("test");
+
+        // wait until done
+
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
 
-        String bestConfiguration = null;
-        double maxSuccessPS = 0;
+        System.out.println("Shutting down");
+        client.close(CloseMode.GRACEFUL);
 
-        for (Map.Entry<String, Double> entry : results.entrySet()) {
-            System.out.println(entry.getKey() + ": " + entry.getValue() + " successPS");
-            if (entry.getValue() > maxSuccessPS) {
-                maxSuccessPS = entry.getValue();
-                bestConfiguration = entry.getKey();
-            }
-        }
 
-        System.out.println("\nBest configuration: " + bestConfiguration + " with " + maxSuccessPS + " successPS");
+
     }
 }

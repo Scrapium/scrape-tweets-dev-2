@@ -6,22 +6,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LoggingThread extends ThreadBase implements Runnable {
 
     private Scraper scraper;
-    private BlockingQueue<TweetThreadTask> taskQueue;
+    private BlockingQueue<TweetTask> taskQueue;
     private AtomicInteger coroutineCount;
     private int lastRequestCount = 0;
     public AtomicInteger successRequestCount;
     public AtomicInteger failedRequestCount;
 
+    private long startEpoch;
     private int lastSuccessCount;
     private int lastFailedCount;
     private long lastLogEpoch;
 
-    public LoggingThread(Scraper scraper, BlockingQueue<TweetThreadTask> taskQueue, AtomicInteger coroutineCount) {
+    public LoggingThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
         this.scraper = scraper;
         this.taskQueue = taskQueue;
-        this.coroutineCount = coroutineCount;
         this.successRequestCount = new AtomicInteger(0);
         this.failedRequestCount = new AtomicInteger(0);
+        this.startEpoch = System.currentTimeMillis() / 1000;
     }
 
     @Override
@@ -36,9 +37,14 @@ public class LoggingThread extends ThreadBase implements Runnable {
             double successPS = successDelta / (currentEpoch - this.lastLogEpoch);
             double failedPS = failedDelta / (currentEpoch - this.lastLogEpoch);
 
+            int secondSinceStart = (int) (currentEpoch - this.startEpoch);
+
+            double successPSTotal = this.successRequestCount.get() / (secondSinceStart == 0 ? 1 : secondSinceStart);
+
             String out = "\n\n=== Tweet Scraper ===\n";
             out += ("Requests : " + (this.successRequestCount.get() + this.failedRequestCount.get())) + "\n";
             out += ("Success/s: " + (successPS)) + "\n";
+            out += ("Success Total/s: " + (successPSTotal)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
 
             System.out.println(out);
@@ -48,8 +54,9 @@ public class LoggingThread extends ThreadBase implements Runnable {
             this.lastLogEpoch = System.currentTimeMillis() / 1000;
 
             try {
-                Thread.sleep(5000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }

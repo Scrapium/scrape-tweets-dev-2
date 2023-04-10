@@ -12,12 +12,9 @@ files_with_extension = [file for file in os.listdir(current_dir) if file.endswit
 for file in files_with_extension:
     f = open(file, 'r')
 
-    print("\n\n\n#### " + file + "\n")
+    print("\n\n#### " + file + "\n")
     for line in f:
         print(line.replace("\n", ""))
 
     print("\n")
 
-print("Please write a test in Main.java to test to see which configuration of the two Scraper(x, y) parameters results in the highest 'successPS' from the logging class")
-
-print("\n\n")

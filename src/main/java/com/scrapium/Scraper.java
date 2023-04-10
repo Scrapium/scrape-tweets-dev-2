@@ -1,6 +1,6 @@
 package com.scrapium;
 
-import com.scrapium.utils.SLog;
+import com.scrapium.utils.DebugLogger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -9,40 +9,66 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scraper {
 
-    private final int consumerCount;
-    public final int maxCoroutineCount;
+    private int consumerCount;
+    public int maxCoroutineCount;
+
     private final ExecutorService threadPool;
-    private BlockingQueue<TweetThreadTask> tweetQueue;
+    public BlockingQueue<TweetTask> tweetQueue;
+
+    //public AtomicInteger coroutineCount;
     public LoggingThread logger;
     private ProducerThread producer;
 
     private ArrayList<ThreadBase> threads;
 
-    public AtomicInteger coroutineCount = new AtomicInteger(0);
+    // the number of coroutines currently running
+    //public AtomicInteger coroutineCount = new AtomicInteger(0);
 
 
 
     public Scraper(int consumerCount, int maxCoroutineCount) {
+
         this.consumerCount = consumerCount;
         this.maxCoroutineCount = maxCoroutineCount;
+
         this.threadPool = Executors.newFixedThreadPool(consumerCount + 2);
         this.tweetQueue = new LinkedBlockingQueue<>();
         this.threads = new ArrayList<ThreadBase>();
+
+
+        // Handle the SIGINT signal (CTRL + C)
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down gracefully...");
+            this.stop();
+        }));
+
+        String osName = System.getProperty("os.name");
+        if (!osName.toLowerCase().contains("windows")) {
+            // the environment is not Windows
+
+            // Handle the SIGTSTP signal (CTRL + Z)
+            CustomSignalHandler.handleTSTPSignal(() -> {
+                this.stop();
+                System.out.println("SIGTSTP signal received!");
+                System.exit(0);
+            });
+        }
+
     }
 
     public void scrape() {
 
-        this.logger = new LoggingThread(this, tweetQueue, coroutineCount);
+        this.logger = new LoggingThread(this, tweetQueue);
         threads.add(this.logger);
         threadPool.submit(this.logger);
 
-        this.producer = new ProducerThread(this, tweetQueue, coroutineCount);
+        this.producer = new ProducerThread(this, tweetQueue);
         threads.add(this.producer);
         threadPool.submit(this.producer);
 
         for (int i = 0; i < consumerCount; i++) {
-            SLog.log("Scraper: Created consumer thread.");
-            TweetThread tweetThread = new TweetThread(this, tweetQueue, coroutineCount);
+            DebugLogger.log("Scraper: Created consumer thread.");
+            TweetThread tweetThread = new TweetThread(this, tweetQueue);
             threads.add(tweetThread);
             threadPool.submit(tweetThread);
         }
@@ -60,6 +86,7 @@ public class Scraper {
             threadPool.shutdown();
             threadPool.awaitTermination(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            e.printStackTrace();
             System.err.println("Thread pool termination interrupted.");
         } finally {
             if (!threadPool.isTerminated()) {
@@ -68,6 +95,7 @@ public class Scraper {
                 try {
                     threadPool.awaitTermination(10, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             }

@@ -1,38 +1,34 @@
 package com.scrapium;
 
-import com.scrapium.utils.SLog;
+import com.scrapium.utils.DebugLogger;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ProducerThread extends ThreadBase implements Runnable {
 
-    private AtomicInteger coroutineCount;
-    private final Scraper scraper;
-    private final BlockingQueue<TweetThreadTask> taskQueue;
 
-    public ProducerThread(Scraper scraper, BlockingQueue<TweetThreadTask> taskQueue, AtomicInteger coroutineCount) {
+    private final Scraper scraper;
+    private final BlockingQueue<TweetTask> taskQueue;
+
+    public ProducerThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
         this.scraper = scraper;
         this.taskQueue = taskQueue;
-        this.coroutineCount = coroutineCount;
     }
 
     @Override
     public void run() {
         while (this.running) {
-            //SLog.log("Coroutine count: " + coroutineCount.get());
-            if (coroutineCount.get() < scraper.maxCoroutineCount + 10) {
-                for (int i = 0; i < scraper.maxCoroutineCount - coroutineCount.get(); i++) {
-                    SLog.log("Producer: Added item to TaskQueue");
-                    this.taskQueue.add(new TweetThreadTask(this.scraper));
-                    coroutineCount.incrementAndGet();
+            if (scraper.tweetQueue.size() < 5000) {
+                for (int i = 0; i < 5000 - scraper.tweetQueue.size(); i++) {
+                    //DebugLogger.log("Producer: Added item to TaskQueue");
+                    this.taskQueue.add(new TweetTask("Example tweet search"));
                 }
             } else {
                 try {
-                    //int sleepTime = 10; // Adjust this value based on the current state of the queue or the active coroutines
-                    //Thread.sleep(sleepTime);
                     Thread.sleep(0);
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             }

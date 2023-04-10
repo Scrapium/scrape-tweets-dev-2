@@ -1,13 +1,13 @@
 package com.scrapium;
 
-import com.scrapium.utils.SLog;
-import okhttp3.*;
+public class TweetTask {
+    private final String exampleTweetSearch;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+    public TweetTask(String exampleTweetSearch) {
+        this.exampleTweetSearch = exampleTweetSearch;
+    }
 
-public class TweetThreadTask {
-
+    /*
     private final Scraper scraper;
     private int requestCount;
 
@@ -80,4 +80,6 @@ public class TweetThreadTask {
         /////////////////////////////////////////////////////////////////////////////
 
     }
+
+     */
 }

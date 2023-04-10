@@ -1,6 +1,6 @@
 package com.scrapium.utils;
 
-public class SLog {
+public class DebugLogger {
     public static void log(String message) {
         //System.out.println(message);
     }
