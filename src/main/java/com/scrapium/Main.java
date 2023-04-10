@@ -5,8 +5,8 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-        int maxTestDurationMinutes = 1;
-        long testDurationMillis = maxTestDurationMinutes * 60 * 1000;
+        double maxTestDurationMinutes = 0.5;
+        long testDurationMillis = (long) (maxTestDurationMinutes * 60 * 1000);
         Map<String, Double> results = new HashMap<>();
 
         for (int consumerCount = 1; consumerCount <= 5; consumerCount++) {
@@ -47,7 +47,15 @@ public class Main {
 
                 double successPS = scraper.logger.successRequestCount.get() / (double) testDurationMillis * 1000;
                 results.put(configKey, successPS);
+
                 scraper.stop();
+
+                try {
+                    Thread.sleep(8000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
             }
         }
 

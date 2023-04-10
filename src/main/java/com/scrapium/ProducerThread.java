@@ -5,7 +5,7 @@ import com.scrapium.utils.SLog;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ProducerThread implements Runnable {
+public class ProducerThread extends ThreadBase implements Runnable {
 
     private AtomicInteger coroutineCount;
     private final Scraper scraper;
@@ -19,7 +19,7 @@ public class ProducerThread implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (this.running) {
             //SLog.log("Coroutine count: " + coroutineCount.get());
             if (coroutineCount.get() < scraper.maxCoroutineCount + 10) {
                 for (int i = 0; i < scraper.maxCoroutineCount - coroutineCount.get(); i++) {

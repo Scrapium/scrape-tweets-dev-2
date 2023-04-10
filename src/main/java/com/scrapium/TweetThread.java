@@ -1,13 +1,11 @@
 package com.scrapium;
 
-import com.scrapium.Scraper;
 import com.scrapium.utils.SLog;
 
-import java.net.SocketTimeoutException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TweetThread implements Runnable {
+public class TweetThread  extends ThreadBase implements Runnable{
 
     private final Scraper scraper;
     private final BlockingQueue<TweetThreadTask> taskQueue;
@@ -21,12 +19,13 @@ public class TweetThread implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (this.running) {
             try {
                 if (coroutineCount.get() > 0) {
                     SLog.log("TweetThread: Ran cycle");
 
                     TweetThreadTask task = taskQueue.take();
+
                     SLog.log("TweetThread: Task Taken");
 
                     task.perform();

@@ -17,9 +17,9 @@ public class TweetThreadTask {
 
         this.scraper = scraper;
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(4, TimeUnit.SECONDS)
-                .writeTimeout(4, TimeUnit.SECONDS)
-                .readTimeout(4, TimeUnit.SECONDS)
+                .connectTimeout(8, TimeUnit.SECONDS)
+                .writeTimeout(8, TimeUnit.SECONDS)
+                .readTimeout(8, TimeUnit.SECONDS)
                 .build();
     }
 
@@ -37,7 +37,7 @@ public class TweetThreadTask {
 
         // Construct the request to the Twitter API
         Request request = new Request.Builder()
-                .url("https://example.com")
+                .url("http://glowingwholebrightmoon.neverssl.com/online/")
                 .build();
 
 

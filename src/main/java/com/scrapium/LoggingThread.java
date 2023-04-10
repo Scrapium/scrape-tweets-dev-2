@@ -3,7 +3,7 @@ package com.scrapium;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LoggingThread implements Runnable {
+public class LoggingThread extends ThreadBase implements Runnable {
 
     private Scraper scraper;
     private BlockingQueue<TweetThreadTask> taskQueue;
@@ -26,7 +26,7 @@ public class LoggingThread implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (this.running) {
 
             long currentEpoch = System.currentTimeMillis() / 1000;
 
@@ -41,14 +41,14 @@ public class LoggingThread implements Runnable {
             out += ("Success/s: " + (successPS)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
 
-            //System.out.println(out);
+            System.out.println(out);
 
             this.lastSuccessCount = this.successRequestCount.get();
             this.lastFailedCount = this.failedRequestCount.get();
             this.lastLogEpoch = System.currentTimeMillis() / 1000;
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(5000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
