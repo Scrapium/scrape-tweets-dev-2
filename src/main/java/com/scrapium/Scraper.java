@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scraper {
 
+    public long conSocketTimeout;
     private int consumerCount;
     public int maxCoroutineCount;
 
@@ -22,14 +23,14 @@ public class Scraper {
     private ArrayList<ThreadBase> threads;
 
     // the number of coroutines currently running
-    //public AtomicInteger coroutineCount = new AtomicInteger(0);
 
 
 
-    public Scraper(int consumerCount, int maxCoroutineCount) {
+    public Scraper(int consumerCount, int maxCoroutineCount, int conSocketTimeout) {
 
         this.consumerCount = consumerCount;
         this.maxCoroutineCount = maxCoroutineCount;
+        this.conSocketTimeout = conSocketTimeout;
 
         this.threadPool = Executors.newFixedThreadPool(consumerCount + 2);
         this.tweetQueue = new LinkedBlockingQueue<>();
