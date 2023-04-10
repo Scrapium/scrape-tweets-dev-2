@@ -13,6 +13,7 @@ import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.http.support.BasicRequestBuilder;
+import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 
@@ -128,5 +129,9 @@ public class TweetThreadTaskProcessor {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    public void closeRequestClient(){
+        client.close(CloseMode.GRACEFUL);
     }
 }

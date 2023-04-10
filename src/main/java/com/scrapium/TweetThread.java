@@ -50,5 +50,6 @@ public class TweetThread  extends ThreadBase implements Runnable{
                 DebugLogger.log("Interrupted Exception!");
             }
         }
+        this.taskProcessor.closeRequestClient();
     }
 }
