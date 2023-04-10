@@ -4,6 +4,8 @@ import com.scrapium.utils.DebugLogger;
 import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpHost;
@@ -33,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TweetThreadTaskProcessor {
     private final Scraper scraper;
     private final BlockingQueue<TweetTask> taskQueue;
+    private final PoolingHttpClientConnectionManager connectionManager;
     private AtomicInteger coroutineCount;
 
     private int requestCount;
@@ -52,10 +55,10 @@ public class TweetThreadTaskProcessor {
                 .setSoTimeout(Timeout.ofSeconds(5))
                 .build();
 
+
         client = HttpAsyncClients.custom()
                 .setIOReactorConfig(ioReactorConfig)
                 .build();
-
 
         client.start();
 
@@ -64,8 +67,6 @@ public class TweetThreadTaskProcessor {
     public void processNextTask() {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-
-
         try {
             TweetTask task = this.taskQueue.take();
 
@@ -73,8 +74,8 @@ public class TweetThreadTaskProcessor {
 
             final BasicHttpRequest request = BasicRequestBuilder.get()
                     //.setHttpHost( new HttpHost("httpforever.com") )
-                    .setHttpHost( new HttpHost("beautifulbrightinnerlight.neverssl.com") )
-                    .setPath("/online")
+                    .setHttpHost( new HttpHost("conpiler.io") )
+                    .setPath("/")
                     .build();
 
             ///////////////////////// System.out.println("Executing request " + request);
