@@ -20,6 +20,5 @@ for file in files_with_extension:
 
 print("This is the current code")
 
-print("The code freezes at 'TweetThread: Task semaphore acquired' and 'Producer: Added item to TaskQueue' is never printed")
 
 print("\n\n")

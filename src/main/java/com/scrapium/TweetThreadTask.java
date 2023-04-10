@@ -4,14 +4,23 @@ import com.scrapium.utils.SLog;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class TweetThreadTask {
 
     private final Scraper scraper;
     private int requestCount;
 
+    OkHttpClient client;
+
     public TweetThreadTask(Scraper scraper) {
+
         this.scraper = scraper;
+        this.client = new OkHttpClient.Builder()
+                .connectTimeout(4, TimeUnit.SECONDS)
+                .writeTimeout(4, TimeUnit.SECONDS)
+                .readTimeout(4, TimeUnit.SECONDS)
+                .build();
     }
 
     public void perform() {
@@ -24,33 +33,22 @@ public class TweetThreadTask {
 
         //////////////////////////////////////////////////////////////////////////////
 
-        OkHttpClient client = new OkHttpClient();
+
 
         // Construct the request to the Twitter API
         Request request = new Request.Builder()
                 .url("https://example.com")
                 .build();
 
+
         // Make an asynchronous request to the Twitter API
         client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-
-                SLog.log("FAIL: Scraping task completed");
-
-
-
-                // Handle the failure of the request
-                e.printStackTrace();
-                scraper.coroutineCount.decrementAndGet();
-                //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
-            }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 // Handle the response from the Twitter API
                 String responseBody = response.body().string();
-                System.out.println("SUCCESS: "+response.code());
+                //System.out.println("SUCCESS: "+response.code());
 
                 scraper.logger.increaseRequestCount();
 
@@ -62,6 +60,21 @@ public class TweetThreadTask {
                 scraper.coroutineCount.decrementAndGet();
                 //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
             }
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+                SLog.log("FAIL: Scraping task completed");
+
+
+                scraper.logger.increaseRequestCount();
+                // Handle the failure of the request
+                //e.printStackTrace();
+                scraper.coroutineCount.decrementAndGet();
+                //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
+            }
+
+
         });
 
         /////////////////////////////////////////////////////////////////////////////

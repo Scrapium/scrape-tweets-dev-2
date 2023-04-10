@@ -35,7 +35,7 @@ public class LoggingThread implements Runnable {
             
             this.lastRequestCount = totalRequestCount.get();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

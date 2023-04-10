@@ -3,6 +3,7 @@ package com.scrapium;
 import com.scrapium.Scraper;
 import com.scrapium.utils.SLog;
 
+import java.net.SocketTimeoutException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,8 +31,10 @@ public class TweetThread implements Runnable {
 
                     task.perform();
 
+
                     SLog.log("Decrementing counter");
                 } else {
+                    System.out.println("Empty queue!");
                     Thread.sleep(10); // Sleep when the maximum number of tasks are being executed
                 }
             } catch (InterruptedException e) {
