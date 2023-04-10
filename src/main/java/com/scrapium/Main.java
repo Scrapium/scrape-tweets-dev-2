@@ -1,8 +1,17 @@
 package com.scrapium;
 
+import com.scrapium.utils.TimeFormatter;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class Main {
 
     public static void main(String[] args) {
+        runTest();
+    }
+
+    public void runService(){
 
         // Scraper(consumerCount, maxCoroutineCount, conSocketTimeout)
         // consumerCount - The number of threads running scraper tasks
@@ -16,6 +25,78 @@ public class Main {
         Scraper scraper = new Scraper(4, 800, 5);
         scraper.scrape();
 
+    }
 
+    public static void runTest() {
+        Map<String, Integer> configResults = new HashMap<>();
+        String bestConfigKey = "";
+        int highestSuccessfulRequests = 0;
+
+        double timePerTest = 4 * 60 * 1000; // 4 minutes
+
+        int totalTestCount = (((8-1)/2) * ((2000-100)/250) * ((28 - 4)/5));
+        int totalTestTime = (int) (totalTestCount * timePerTest);
+
+        int testIter = 0;
+
+        System.out.println("\n== Test started ==\n");
+        System.out.println("Total Tests = " + (totalTestCount));
+
+        //System.out.println("Total time for test = ~ " + (totalTestTime/1000) + " seconds.");
+
+        System.out.println("Test will be completed " + TimeFormatter.timeToString((totalTestTime/1000)) + "\n");
+
+        for (int consumerCount = 1; consumerCount <= 8; consumerCount += 2) { // 1 -> 8
+            for (int maxCoroutineCount = 100; maxCoroutineCount <= 2000; maxCoroutineCount += 250) { // 100 -> 2000
+                for (int conSocketTimeout = 4; conSocketTimeout <= 28; conSocketTimeout += 5) { // 4 -> 28
+
+                    Scraper scraper = new Scraper(consumerCount, maxCoroutineCount, conSocketTimeout);
+                    scraper.scrape();
+
+                    try {
+                        Thread.sleep((long) timePerTest);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    int successfulRequests = scraper.logger.successRequestCount.get();
+                    int failedRequests = scraper.logger.failedRequestCount.get();
+
+                    String configKey = String.format("c_%d_m_%d_t_%d", consumerCount, maxCoroutineCount, conSocketTimeout);
+                    configResults.put(configKey, successfulRequests);
+
+                    int timeRemaining = (int) (totalTestTime - testIter * timePerTest);
+
+
+                    System.out.printf("\n[" + testIter + "/" + totalTestCount + "] Configuration: %s | Successful Requests: %d | Failed Requests: %d%n\n",
+                            configKey, successfulRequests, failedRequests);
+                    System.out.println("Test will be completed " + TimeFormatter.timeToString(timeRemaining/1000) + "\n");
+
+                    scraper.stop();
+
+                    testIter++;
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    if (successfulRequests > highestSuccessfulRequests) {
+                        highestSuccessfulRequests = successfulRequests;
+                        bestConfigKey = configKey;
+                    }
+                }
+            }
+        }
+
+        System.out.println("\n== All Configuration Results ==");
+        System.out.println("\n== C=threads m=coroutines t=timeout");
+
+        for (Map.Entry<String, Integer> entry : configResults.entrySet()) {
+            System.out.printf("Configuration: %s | Successful Requests: %d%n", entry.getKey(), entry.getValue());
+        }
+
+        System.out.printf("\nBest Configuration: %s | Highest Successful Requests: %d%n", bestConfigKey, highestSuccessfulRequests);
     }
 }

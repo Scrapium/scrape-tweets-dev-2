@@ -50,6 +50,15 @@ public class TweetThread  extends ThreadBase implements Runnable{
                 DebugLogger.log("Interrupted Exception!");
             }
         }
+
+        // a bit hacky, but wait for all threads to finish requests before running closeRequestClient
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         this.taskProcessor.closeRequestClient();
     }
 }

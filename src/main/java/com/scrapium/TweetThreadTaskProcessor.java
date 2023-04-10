@@ -15,6 +15,7 @@ import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.http.support.BasicRequestBuilder;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.reactor.IOReactorShutdownException;
 import org.apache.hc.core5.util.Timeout;
 
 import java.io.IOException;
@@ -115,7 +116,8 @@ public class TweetThreadTaskProcessor {
 
                         @Override
                         public void failed(final Exception cause) {
-                            System.out.println(request + "->" + cause);
+                            // TODO: FIX FAILED
+                            // System.out.println(request + "->" + cause);
                         }
 
                         @Override
