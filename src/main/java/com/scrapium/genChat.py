@@ -20,5 +20,4 @@ for file in files_with_extension:
 
 print("This is the current code")
 
-
 print("\n\n")

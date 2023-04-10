@@ -50,7 +50,7 @@ public class TweetThreadTask {
                 String responseBody = response.body().string();
                 //System.out.println("SUCCESS: "+response.code());
 
-                scraper.logger.increaseRequestCount();
+                scraper.logger.increaseSuccessRequestCount();
 
                 // Parse the response and add the tweets to the tweetQueue
                 // ...
@@ -67,7 +67,7 @@ public class TweetThreadTask {
                 SLog.log("FAIL: Scraping task completed");
 
 
-                scraper.logger.increaseRequestCount();
+                scraper.logger.increaseFailedRequestCount();
                 // Handle the failure of the request
                 //e.printStackTrace();
                 scraper.coroutineCount.decrementAndGet();
