@@ -1,9 +1,32 @@
 package com.scrapium;
 
 import com.scrapium.utils.DebugLogger;
+import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.message.BasicHttpRequest;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
+import org.apache.hc.core5.http.support.BasicRequestBuilder;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.nio.CharBuffer;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -14,85 +37,126 @@ public class TweetThreadTaskProcessor {
 
     private int requestCount;
 
+    final IOReactorConfig ioReactorConfig;
+    final CloseableHttpAsyncClient client;
+
+    // TODO: add client.close(CloseMode.GRACEFUL); on exit.
+
     public TweetThreadTaskProcessor(Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
 
         this.scraper = scraper;
         this.taskQueue = taskQueue;
         this.coroutineCount = coroutineCount;
-        /*
-        this.client = new OkHttpClient.Builder()
-                .connectTimeout(5, TimeUnit.SECONDS)
-                .writeTimeout(5, TimeUnit.SECONDS)
-                .readTimeout(5, TimeUnit.SECONDS)
+
+        ioReactorConfig = IOReactorConfig.custom()
+                .setSoTimeout(Timeout.ofSeconds(5))
                 .build();
-        */
+
+        client = HttpAsyncClients.custom()
+                .setIOReactorConfig(ioReactorConfig)
+                .build();
+
+
+        client.start();
+
     }
 
     public void processNextTask() {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-        /*
+
+
         try {
-
             TweetTask task = this.taskQueue.take();
-
-
-            DebugLogger.log("(1) TweetThreadTask: Asked to perform task.");
-
-            //////////////////////////////////////////////////////////////////////////////
 
             coroutineCount.incrementAndGet();
 
-            DebugLogger.log("(2) TweetThreadTask: Asked to perform task.");
-
-
-            // Construct the request to the Twitter API
-            Request request = new Request.Builder()
-                    .url("https://example.com")
+            final BasicHttpRequest request = BasicRequestBuilder.get()
+                    //.setHttpHost( new HttpHost("httpforever.com") )
+                    .setHttpHost( new HttpHost("beautifulbrightinnerlight.neverssl.com") )
+                    .setPath("/online")
                     .build();
 
+            ///////////////////////// System.out.println("Executing request " + request);
 
-            // Make an asynchronous request to the Twitter API
-            client.newCall(request).enqueue(new Callback() {
+            final Future<Void> future = client.execute(
+                    new BasicRequestProducer(request, null),
+                    new AbstractCharResponseConsumer<Void>() {
 
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    // Handle the response from the Twitter API
-                    String responseBody = response.body().string();
-                    //System.out.println("SUCCESS: "+response.code());
+                        @Override
+                        protected void start(
+                                final HttpResponse response,
+                                final ContentType contentType) throws HttpException, IOException {
 
-                    scraper.logger.increaseSuccessRequestCount();
+                                ///////////////////////// System.out.println(request + "->" + new StatusLine(response));
 
-                    // Parse the response and add the tweets to the tweetQueue
-                    // ...
+                                coroutineCount.decrementAndGet();
 
-                    // Print a message to indicate that the task is completed
-                    //DebugLogger.log("SUCCESS: Scraping task completed");
-                    coroutineCount.decrementAndGet();
-                    //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
-                }
+                                if(response.getCode() != 200){
+                                    scraper.logger.increaseFailedRequestCount();
 
-                @Override
-                public void onFailure(Call call, IOException e) {
+                                    // TODO: THE REQUEST HAS FAILED TERMINATE HERE
 
-                    DebugLogger.log("FAIL: Scraping task completed");
+                                    failed(new Exception("HTTP response code was not 200: " + response.getCode() ));
+
+                                    return;
+                                } else {
+                                    scraper.logger.increaseSuccessRequestCount();
+                                }
+
+                        }
+
+                        @Override
+                        protected int capacityIncrement() {
+                            return Integer.MAX_VALUE;
+                        }
+
+                        @Override
+                        protected void data(final CharBuffer data, final boolean endOfStream) throws IOException {
+                            while (data.hasRemaining()) {
+                                data.get();
+                            }
+                            if (endOfStream) {
+                                ///////////////////////// System.out.println("got response!!!");
+                                releaseResources();
+                                coroutineCount.decrementAndGet();
+                            }
+                        }
+
+                        @Override
+                        protected Void buildResult() throws IOException {
+                            return null;
+                        }
+
+                        @Override
+                        public void failed(final Exception cause) {
+                            System.out.println(request + "->" + cause);
+                        }
+
+                        @Override
+                        public void releaseResources() {
+
+                        }
+
+            }, null);
 
 
-                    scraper.logger.increaseFailedRequestCount();
-                    // Handle the failure of the request
-                    //e.printStackTrace();
-                    coroutineCount.decrementAndGet();
-                    //scraper.coroutineCount.set(scraper.coroutineCount.get() - 1);
-                }
-
-
-            });
 
 
         } catch (InterruptedException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        */
+
+
+
+
+
+
+
+
+
+
+
     }
 }

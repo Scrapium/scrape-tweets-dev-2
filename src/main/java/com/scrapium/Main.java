@@ -1,30 +1,13 @@
 package com.scrapium;
 
-import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.message.StatusLine;
-import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
-import org.apache.hc.core5.http.support.BasicRequestBuilder;
-import org.apache.hc.core5.io.CloseMode;
-import org.apache.hc.core5.reactor.IOReactorConfig;
-import org.apache.hc.core5.util.Timeout;
-
-import java.io.IOException;
-import java.nio.CharBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
 public class Main {
 
     public static void main(String[] args) {
+
+        Scraper scraper = new Scraper(4, 400);
+        scraper.scrape();
+
+        /*
 
         final IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
                 .setSoTimeout(Timeout.ofSeconds(5))
@@ -37,9 +20,9 @@ public class Main {
         client.start();
 
 
-        // scraper = new Scraper(2, 100);
+        //////////////////////////////
 
-         //scraper.scrape();
+
 
 
 
@@ -103,10 +86,10 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        System.out.println("Shutting down");
-        client.close(CloseMode.GRACEFUL);
+        // RUN THIS TO CLOSE CONNECTIONS.
+        // client.close(CloseMode.GRACEFUL);
 
-
+         */
 
     }
 }
