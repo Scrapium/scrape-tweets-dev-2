@@ -41,7 +41,7 @@ public class LoggingThread implements Runnable {
             out += ("Success/s: " + (successPS)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
 
-            System.out.println(out);
+            //System.out.println(out);
 
             this.lastSuccessCount = this.successRequestCount.get();
             this.lastFailedCount = this.failedRequestCount.get();

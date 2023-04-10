@@ -18,6 +18,6 @@ for file in files_with_extension:
 
     print("\n")
 
-print("This is the current code")
+print("Please write a test in Main.java to test to see which configuration of the two Scraper(x, y) parameters results in the highest 'successPS' from the logging class")
 
 print("\n\n")

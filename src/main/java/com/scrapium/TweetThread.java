@@ -34,7 +34,7 @@ public class TweetThread implements Runnable {
 
                     SLog.log("Decrementing counter");
                 } else {
-                    System.out.println("Empty queue!");
+                    SLog.log("Empty queue!");
                     Thread.sleep(10); // Sleep when the maximum number of tasks are being executed
                 }
             } catch (InterruptedException e) {
