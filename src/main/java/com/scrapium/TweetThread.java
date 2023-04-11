@@ -5,21 +5,23 @@ import com.scrapium.utils.DebugLogger;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TweetThread  extends ThreadBase implements Runnable{
+public class TweetThread  extends ThreadBase implements Runnable {
 
     private final Scraper scraper;
     private final BlockingQueue<TweetTask> taskQueue;
+    private final int threadID;
     private AtomicInteger coroutineCount;
 
     private final TweetThreadTaskProcessor taskProcessor;
 
-    // possibly move maxCoroutineCount to scraper so it doesn't need to be updated in each class - blocking.
+    // possibly move maxCoroutineCount to scraper, so it doesn't need to be updated in each class - blocking.
 
-    public TweetThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
+    public TweetThread(int i, Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
+        this.threadID = i;
         this.scraper = scraper;
         this.taskQueue = taskQueue;
         this.coroutineCount = new AtomicInteger(0);
-        this.taskProcessor = new TweetThreadTaskProcessor(this.scraper, this.taskQueue, this.coroutineCount);
+        this.taskProcessor = new TweetThreadTaskProcessor(this.threadID, this.running, this.scraper, this.taskQueue, this.coroutineCount);
     }
 
     @Override
@@ -51,14 +53,7 @@ public class TweetThread  extends ThreadBase implements Runnable{
             }
         }
 
-        // a bit hacky, but wait for all threads to finish requests before running closeRequestClient
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+        //System.out.println("closeRequestClient called");
         this.taskProcessor.closeRequestClient();
     }
 }

@@ -11,7 +11,7 @@ public class Main {
         runTest();
     }
 
-    public void runService(){
+    public static void runService(){
 
         // Scraper(consumerCount, maxCoroutineCount, conSocketTimeout)
         // consumerCount - The number of threads running scraper tasks
@@ -32,26 +32,27 @@ public class Main {
         String bestConfigKey = "";
         int highestSuccessfulRequests = 0;
 
-        double timePerTest = 4 * 60 * 1000; // 4 minutes
+        double timePerTest = 2 * 60 * 1000; // 30 seconds
 
-        int totalTestCount = (((8-1)/2) * ((2000-100)/250) * ((28 - 4)/5));
+        int totalTestCount = (((6-1)/2) * ((1500-100)/250) * ((28 - 4)/10));
         int totalTestTime = (int) (totalTestCount * timePerTest);
 
         int testIter = 0;
 
         System.out.println("\n== Test started ==\n");
-        System.out.println("Total Tests = " + (totalTestCount));
+        System.out.println("- Total Tests = " + (totalTestCount));
+        System.out.println("- Test will be completed " + TimeFormatter.timeToString((totalTestTime/1000)));
 
-        //System.out.println("Total time for test = ~ " + (totalTestTime/1000) + " seconds.");
-
-        System.out.println("Test will be completed " + TimeFormatter.timeToString((totalTestTime/1000)) + "\n");
-
-        for (int consumerCount = 1; consumerCount <= 8; consumerCount += 2) { // 1 -> 8
-            for (int maxCoroutineCount = 100; maxCoroutineCount <= 2000; maxCoroutineCount += 250) { // 100 -> 2000
-                for (int conSocketTimeout = 4; conSocketTimeout <= 28; conSocketTimeout += 5) { // 4 -> 28
+        for (int consumerCount = 1; consumerCount <= 6; consumerCount += 2) { // 1 -> 8
+            for (int maxCoroutineCount = 100; maxCoroutineCount <= 1000; maxCoroutineCount += 250) { // 100 -> 2000
+                for (int conSocketTimeout = 4; conSocketTimeout <= 28; conSocketTimeout += 10) { // 4 -> 28
 
                     Scraper scraper = new Scraper(consumerCount, maxCoroutineCount, conSocketTimeout);
                     scraper.scrape();
+
+                    String configKey = String.format("c_%d_m_%d_t_%d", consumerCount, maxCoroutineCount, conSocketTimeout);
+
+                    System.out.println("\n[" + testIter + "/" + totalTestCount + "] Starting test: "+ configKey);
 
                     try {
                         Thread.sleep((long) timePerTest);
@@ -62,7 +63,7 @@ public class Main {
                     int successfulRequests = scraper.logger.successRequestCount.get();
                     int failedRequests = scraper.logger.failedRequestCount.get();
 
-                    String configKey = String.format("c_%d_m_%d_t_%d", consumerCount, maxCoroutineCount, conSocketTimeout);
+
                     configResults.put(configKey, successfulRequests);
 
                     int timeRemaining = (int) (totalTestTime - testIter * timePerTest);
@@ -75,12 +76,6 @@ public class Main {
                     scraper.stop();
 
                     testIter++;
-
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
 
                     if (successfulRequests > highestSuccessfulRequests) {
                         highestSuccessfulRequests = successfulRequests;

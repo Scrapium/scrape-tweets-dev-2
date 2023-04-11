@@ -1,53 +1,58 @@
 package com.scrapium;
 
 import com.scrapium.utils.DebugLogger;
-import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.message.StatusLine;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.http.support.BasicRequestBuilder;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.IOReactorConfig;
-import org.apache.hc.core5.reactor.IOReactorShutdownException;
 import org.apache.hc.core5.util.Timeout;
 
-import java.io.IOException;
-import java.nio.CharBuffer;
+import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TweetThreadTaskProcessor {
+
+    /*
+        Notes TODO:
+            - AtomicReference isn't efficient (create a new object instead)
+     */
+
     private final Scraper scraper;
     private final BlockingQueue<TweetTask> taskQueue;
+    private final int threadID;
+    private BlockingQueue<TweetThreadRequestConsumer> consumerQueue;
+    private volatile boolean  tweetThreadRunning;
     private AtomicInteger coroutineCount;
 
     private int requestCount;
-
     final IOReactorConfig ioReactorConfig;
     final CloseableHttpAsyncClient client;
 
-    public TweetThreadTaskProcessor(Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
+    public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
+        this.threadID = threadID;
         this.scraper = scraper;
         this.taskQueue = taskQueue;
         this.coroutineCount = coroutineCount;
-
+        this.tweetThreadRunning = running;
+        this.consumerQueue = new LinkedBlockingQueue<>();
+        
         ioReactorConfig = IOReactorConfig.custom()
                 .setSoTimeout(Timeout.ofSeconds(this.scraper.conSocketTimeout))
                 .build();
 
         // Create a custom connection manager with custom limits
+
         PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
-                .setMaxConnPerRoute(100)
-                .setMaxConnPerRoute(100);
+                .setMaxConnPerRoute(400)
+                .setMaxConnPerRoute(400);
 
         client = HttpAsyncClients.custom()
                 .setIOReactorConfig(ioReactorConfig)
@@ -66,66 +71,18 @@ public class TweetThreadTaskProcessor {
             coroutineCount.incrementAndGet();
 
             final BasicHttpRequest request = BasicRequestBuilder.get()
-                    .setHttpHost(new HttpHost("conpiler.io"))
+                    .setHttpHost(new HttpHost("httpforever.com"))
                     .setPath("/")
                     .build();
 
+            //System.out.println("Consumer Count: " + this.consumerQueue.size());
+
+            TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, coroutineCount, scraper);
+            this.consumerQueue.add(consumer);
+
             final Future<Void> future = client.execute(
                     new BasicRequestProducer(request, null),
-                    new AbstractCharResponseConsumer<Void>() {
-
-                        @Override
-                        protected void start(
-                                final HttpResponse response,
-                                final ContentType contentType) throws HttpException, IOException {
-
-                            coroutineCount.decrementAndGet();
-
-                            if (response.getCode() != 200) {
-                                scraper.logger.increaseFailedRequestCount();
-
-                                failed(new Exception("HTTP response code was not 200: " + response.getCode()));
-
-                                return;
-                            } else {
-                                scraper.logger.increaseSuccessRequestCount();
-                            }
-
-                        }
-
-                        @Override
-                        protected int capacityIncrement() {
-                            return Integer.MAX_VALUE;
-                        }
-
-                        @Override
-                        protected void data(final CharBuffer data, final boolean endOfStream) throws IOException {
-                            while (data.hasRemaining()) {
-                                data.get();
-                            }
-                            if (endOfStream) {
-                                releaseResources();
-                                coroutineCount.decrementAndGet();
-                            }
-                        }
-
-                        @Override
-                        protected Void buildResult() throws IOException {
-                            return null;
-                        }
-
-                        @Override
-                        public void failed(final Exception cause) {
-                            // TODO: FIX FAILED
-                            // System.out.println(request + "->" + cause);
-                        }
-
-                        @Override
-                        public void releaseResources() {
-
-                        }
-
-                    }, null);
+                    consumer, null);
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -133,7 +90,39 @@ public class TweetThreadTaskProcessor {
         }
     }
 
+    // needs to be updated to accept different types of queries
+    protected void removeConsumerFromQueue(TweetThreadRequestConsumer consumer) {
+        this.consumerQueue.remove(consumer);
+    }
+
     public void closeRequestClient(){
+
+        for (Iterator<TweetThreadRequestConsumer> iterator = this.consumerQueue.iterator(); iterator.hasNext(); ) {
+            TweetThreadRequestConsumer item = iterator.next();
+            item.shouldCancel = true;
+        }
+
+
+        double startSize = this.consumerQueue.size();
+
+        if(startSize > 0){
+            while(this.consumerQueue.size() > 0){
+                double currentSize = this.consumerQueue.size();
+                int n1 = (int) (50 * (currentSize / startSize));
+                int n2 = (int) 50 - n1;
+                System.out.println("(" + this.threadID + ") [" + "=".repeat(n2) + "-".repeat(n1) +  "]");
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+
+
         client.close(CloseMode.GRACEFUL);
     }
 }
+

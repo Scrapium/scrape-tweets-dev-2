@@ -69,7 +69,7 @@ public class Scraper {
 
         for (int i = 0; i < consumerCount; i++) {
             DebugLogger.log("Scraper: Created consumer thread.");
-            TweetThread tweetThread = new TweetThread(this, tweetQueue);
+            TweetThread tweetThread = new TweetThread(i + 1, this, tweetQueue);
             threads.add(tweetThread);
             threadPool.submit(tweetThread);
         }
@@ -85,7 +85,7 @@ public class Scraper {
         try {
             System.out.println("Attempting to shutdown thread pool...");
             threadPool.shutdown();
-            threadPool.awaitTermination(10, TimeUnit.SECONDS);
+            threadPool.awaitTermination(400, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
             System.err.println("Thread pool termination interrupted.");
@@ -94,7 +94,7 @@ public class Scraper {
                 System.err.println("Forcing thread pool shutdown...");
                 threadPool.shutdownNow();
                 try {
-                    threadPool.awaitTermination(10, TimeUnit.SECONDS);
+                    threadPool.awaitTermination(60, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
