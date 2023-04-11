@@ -113,7 +113,7 @@ public class TweetThreadTaskProcessor {
                 System.out.println("(" + this.threadID + ") [" + "=".repeat(n2) + "-".repeat(n1) +  "]");
 
                 try {
-                    Thread.sleep(200);
+                    Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
