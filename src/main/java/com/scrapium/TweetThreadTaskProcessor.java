@@ -51,8 +51,8 @@ public class TweetThreadTaskProcessor {
         // Create a custom connection manager with custom limits
 
         PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
-                .setMaxConnPerRoute(400)
-                .setMaxConnPerRoute(400);
+                .setMaxConnPerRoute(2000) // may be a bottleneck
+                .setMaxConnPerRoute(2000);
 
         client = HttpAsyncClients.custom()
                 .setIOReactorConfig(ioReactorConfig)

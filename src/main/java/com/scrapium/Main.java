@@ -32,9 +32,9 @@ public class Main {
         String bestConfigKey = "";
         int highestSuccessfulRequests = 0;
 
-        double timePerTest = 0.001 * 60 * 1000; // 30 seconds
+        double timePerTest = 5 * 60 * 1000; // 30 seconds
 
-        int totalTestCount = (((6-1)/2) * ((4000-100)/250) * ((28 - 4)/10));
+        int totalTestCount = (((6-1)/2) * ((15000-100)/250) * ((28 - 4)/10));
         int totalTestTime = (int) (totalTestCount * timePerTest);
 
         int testIter = 0;
@@ -43,9 +43,9 @@ public class Main {
         System.out.println("- Total Tests = " + (totalTestCount));
         System.out.println("- Test will be completed " + TimeFormatter.timeToString((totalTestTime/1000)));
 
-        for (int maxCoroutineCount = 100; maxCoroutineCount <= 8000; maxCoroutineCount += 250) { // 100 -> 2000
+        for (int maxCoroutineCount = 100; maxCoroutineCount <= 15000; maxCoroutineCount += 250) { // 100 -> 2000
             for (int consumerCount = 1; consumerCount <= 6; consumerCount += 2) { // 1 -> 8
-                for (int conSocketTimeout = 4; conSocketTimeout <= 28; conSocketTimeout += 10) { // 4 -> 28
+                for (int conSocketTimeout = 6; conSocketTimeout <= 28; conSocketTimeout += 10) { // 4 -> 28
 
                     Scraper scraper = new Scraper(consumerCount, maxCoroutineCount, conSocketTimeout);
                     scraper.scrape();
