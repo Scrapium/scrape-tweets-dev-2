@@ -8,7 +8,7 @@ import java.util.Map;
 public class Main {
 
     public static void main(String[] args) {
-        runTest();
+        runService();
     }
 
     public static void runService(){
@@ -22,7 +22,7 @@ public class Main {
         // scraper.logger.successRequestCount.get() - Will get the amount of total successful requests since .scrape() is called.
         // scraper.logger.failedRequestCount.get() - Will get the amount of total failed requests since .scrape() is called.
 
-        Scraper scraper = new Scraper(4, 800, 5);
+        Scraper scraper = new Scraper(1, 10, 10);
         scraper.scrape();
 
     }

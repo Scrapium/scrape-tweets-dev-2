@@ -47,7 +47,7 @@ public class LoggingThread extends ThreadBase implements Runnable {
             out += ("Success Total/s: " + (successPSTotal)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
 
-            //System.out.println(out);
+            System.out.println(out);
 
             this.lastSuccessCount = this.successRequestCount.get();
             this.lastFailedCount = this.failedRequestCount.get();
