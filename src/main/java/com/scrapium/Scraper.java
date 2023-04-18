@@ -19,12 +19,9 @@ public class Scraper {
     //public AtomicInteger coroutineCount;
     public LoggingThread logger;
     private ProducerThread producer;
-
     private ArrayList<ThreadBase> threads;
 
     // the number of coroutines currently running
-
-
 
     public Scraper(int consumerCount, int maxCoroutineCount, int conSocketTimeout) {
 
