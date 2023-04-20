@@ -8,12 +8,13 @@ public class Proxy {
     private String ipAddress;
     private String port;
     private boolean isSocks;
-    private int usageCount;
-    private Timestamp nextAvailable;
-    private String guestToken;
-    private Timestamp guestTokenUpdated;
-    private int successDelta;
-    private int failedCount;
+    private volatile int usageCount; // make it volatile for atomic updates
+    private volatile Timestamp nextAvailable; // make it volatile for atomic updates
+    private volatile String guestToken; // make it volatile for atomic updates
+    private volatile Timestamp guestTokenUpdated; // make it volatile for atomic updates
+    private volatile int successDelta; // make it volatile for atomic updates
+    private volatile int failedCount; // make it volatile for atomic updates
+
 
     // Constructor with all parameters
     public Proxy(String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount) {

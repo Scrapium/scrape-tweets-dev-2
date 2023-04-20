@@ -15,7 +15,7 @@ public class Main {
     public static void main(String[] args) {
         ProxyList pl = new ProxyList();
 
-        pl.sync();
+        pl.syncAndUpdate();
 
         Proxy proxy = pl.get();
 
