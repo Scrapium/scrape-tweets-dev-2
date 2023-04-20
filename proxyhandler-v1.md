@@ -11,10 +11,6 @@ The following restrictions are required:
 - As threading is used, a single proxy should not be used too many times.
 - Proxies should be added to a queue by a proxy gen thread that updates a FILO queue.
 
-Your job is to validate the psuedo code below and confirm that everything in the plan will function as expected.
-
-Look for possible problems that may occur and address them before the implementation is complete.
-
 
 ```
 Proxy:
