@@ -2,11 +2,6 @@ package com.scrapium.utils;
 
 public class TimeFormatter {
 
-    public static void main(String[] args) {
-        int seconds = 240;
-        System.out.println(timeToString(seconds));
-    }
-
     public static String timeToString(int seconds) {
         if (seconds < 60) {
             return "in " + seconds + " seconds";

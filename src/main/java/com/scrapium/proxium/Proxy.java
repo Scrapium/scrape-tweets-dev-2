@@ -17,7 +17,8 @@ public class Proxy {
 
 
     // Constructor with all parameters
-    public Proxy(String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount) {
+    public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount) {
+        this.id = id;
         this.connString = connString;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -108,5 +109,22 @@ public class Proxy {
 
     public void setFailedCount(int failedCount) {
         this.failedCount = failedCount;
+    }
+
+    @Override
+    public String toString() {
+        return "Proxy{" +
+                "id=" + id +
+                ", connString='" + connString + '\'' +
+                ", ipAddress='" + ipAddress + '\'' +
+                ", port='" + port + '\'' +
+                ", isSocks=" + isSocks +
+                ", usageCount=" + usageCount +
+                ", nextAvailable=" + nextAvailable +
+                ", guestToken='" + guestToken + '\'' +
+                ", guestTokenUpdated=" + guestTokenUpdated +
+                ", successDelta=" + successDelta +
+                ", failedCount=" + failedCount +
+                '}';
     }
 }

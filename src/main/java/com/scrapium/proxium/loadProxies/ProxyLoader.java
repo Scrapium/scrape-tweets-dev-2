@@ -185,6 +185,7 @@ public class ProxyLoader {
                     boolean is_socks = Pattern.compile("(?i)socks").matcher(proxy_entry).find();
 
                     Proxy proxy = new Proxy(
+                            -1,
                             connString,
                             ip,
                             port,
