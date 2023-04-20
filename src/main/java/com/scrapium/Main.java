@@ -2,7 +2,7 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.proxium.ProxyList;
-import com.scrapium.utils.TimeFormatter;
+import com.scrapium.utils.TimeUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,9 +15,19 @@ public class Main {
     public static void main(String[] args) {
         ProxyList pl = new ProxyList();
 
-        pl.syncAndRefresh();
+        while(true){
+            pl.syncAndRefresh();
 
-        Proxy proxy = pl.get();
+            Proxy proxy = pl.getNewProxy(0);
+
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
 
     }
 
@@ -53,7 +63,7 @@ public class Main {
 
         System.out.println("\n== Test started ==\n");
         System.out.println("- Total Tests = " + (totalTestCount));
-        System.out.println("- Test will be completed " + TimeFormatter.timeToString((totalTestTime/1000)));
+        System.out.println("- Test will be completed " + TimeUtils.timeToString((totalTestTime/1000)));
 
         for (int maxCoroutineCount = 100; maxCoroutineCount <= 15000; maxCoroutineCount += 250) { // 100 -> 2000
             for (int consumerCount = 1; consumerCount <= 6; consumerCount += 2) { // 1 -> 8
@@ -67,7 +77,7 @@ public class Main {
                     System.out.println("\n[" + testIter + "/" + totalTestCount + "] Starting test: "+ configKey + "\n");
 
                     int timeRemaining = (int) (totalTestTime - testIter * timePerTest);
-                    System.out.println("( Test will be completed " + TimeFormatter.timeToString(timeRemaining/1000) + " )\n");
+                    System.out.println("( Test will be completed " + TimeUtils.timeToString(timeRemaining/1000) + " )\n");
 
                     try {
                         Thread.sleep((long) timePerTest);

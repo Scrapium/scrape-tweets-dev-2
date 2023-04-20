@@ -3,6 +3,8 @@ package com.scrapium.proxium;
 import java.sql.Timestamp;
 
 public class Proxy {
+
+
     private int id = -1;
     private String connString;
     private String ipAddress;
@@ -15,6 +17,20 @@ public class Proxy {
     private volatile int successDelta; // make it volatile for atomic updates
     private volatile int failedCount; // make it volatile for atomic updates
 
+    public int getOriginalUsageCount() {
+        return originalUsageCount;
+    }
+
+    public void setOriginalUsageCount(int originalUsageCount) {
+        this.originalUsageCount = originalUsageCount;
+    }
+
+    private volatile int originalUsageCount;
+
+    private volatile int originalSuccessDelta;
+    private volatile int originalFailedCount;
+
+
 
     // Constructor with all parameters
     public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount) {
@@ -23,12 +39,25 @@ public class Proxy {
         this.ipAddress = ipAddress;
         this.port = port;
         this.isSocks = isSocks;
-        this.usageCount = usageCount;
-        this.nextAvailable = nextAvailable;
-        this.guestToken = guestToken;
-        this.guestTokenUpdated = guestTokenUpdated;
-        this.successDelta = successDelta;
-        this.failedCount = failedCount;
+
+        this.usageCount = usageCount; // mod
+        this.nextAvailable = nextAvailable; // update latest
+        this.guestToken = guestToken; // update latest
+        this.guestTokenUpdated = guestTokenUpdated; // update latest
+        this.successDelta = successDelta;   // mod
+        this.failedCount = failedCount; // mod
+
+        this.originalUsageCount = usageCount;
+        this.originalSuccessDelta = successDelta;
+        this.originalFailedCount = failedCount;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getConnString() {
@@ -109,6 +138,22 @@ public class Proxy {
 
     public void setFailedCount(int failedCount) {
         this.failedCount = failedCount;
+    }
+
+    public int getOriginalSuccessDelta() {
+        return originalSuccessDelta;
+    }
+
+    public void setOriginalSuccessDelta(int originalSuccessDelta) {
+        this.originalSuccessDelta = originalSuccessDelta;
+    }
+
+    public int getOriginalFailedCount() {
+        return originalFailedCount;
+    }
+
+    public void setOriginalFailedCount(int originalFailedCount) {
+        this.originalFailedCount = originalFailedCount;
     }
 
     @Override
