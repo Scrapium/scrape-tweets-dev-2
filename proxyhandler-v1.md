@@ -78,9 +78,9 @@ add_proxy_to_queue():	# proxies are added into a queue, and then used at a later
 ```
 
 Additional suggestions:
-	- Use a ML model to choose which proxy to use.
-	- Backoff strategy 2^n seconds timeout. n = consecutive filed attempts -> max n + $r (randomness).
-    - Use a rolling time window instead
+- Use a ML model to choose which proxy to use.
+- Backoff strategy 2^n seconds timeout. n = consecutive filed attempts -> max n + $r (randomness).
+- Use a rolling time window instead
 
 
 
