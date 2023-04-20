@@ -62,6 +62,9 @@ public class TweetThreadTaskProcessor {
         client.start();
     }
 
+    /*
+        Run Continuously
+     */
     public void processNextTask() {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
@@ -95,6 +98,11 @@ public class TweetThreadTaskProcessor {
         this.consumerQueue.remove(consumer);
     }
 
+    /*
+
+        Run in the TweetThreadTaskProcessor when the scraper is stopped
+
+     */
     public void closeRequestClient(){
 
         for (Iterator<TweetThreadRequestConsumer> iterator = this.consumerQueue.iterator(); iterator.hasNext(); ) {
@@ -119,8 +127,6 @@ public class TweetThreadTaskProcessor {
                 }
             }
         }
-
-
 
         client.close(CloseMode.GRACEFUL);
     }

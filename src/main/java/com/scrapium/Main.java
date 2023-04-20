@@ -1,24 +1,36 @@
 package com.scrapium;
 
+import com.scrapium.proxium.Proxy;
+import com.scrapium.proxium.ProxyList;
 import com.scrapium.utils.TimeFormatter;
 
 import java.util.HashMap;
 import java.util.Map;
 
+// makes sense to use PostgreSQL for data, and Redis for caching & analytics
+
+
 public class Main {
 
     public static void main(String[] args) {
-        runService();
+        ProxyList pl = new ProxyList();
+
+        pl.sync();
+
+        Proxy proxy = pl.get();
+
     }
 
     public static void runService(){
 
         // Scraper(consumerCount, maxCoroutineCount, conSocketTimeout)
+        
         // consumerCount - The number of threads running scraper tasks
         // maxCoroutineCount - The max amount of asynchronous calls that should be made for each thread
         // conSocketTimeout - The amount of time before connectionSocketTimeout will occur.
 
         // calls
+
         // scraper.logger.successRequestCount.get() - Will get the amount of total successful requests since .scrape() is called.
         // scraper.logger.failedRequestCount.get() - Will get the amount of total failed requests since .scrape() is called.
 
