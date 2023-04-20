@@ -1,15 +1,3 @@
-Proxy:
-	usage_count -> 1 -> 500 
-	next_avaliable -> TIME	
-
-    gt -> UUID
-
-	gt_last_updated -> TIME	
-	
-    success_delta -> 0 LIMIT ( 5, 000 -> 10, 000 ) 
-	failed_count -> 0 (0 -> 100) 
-
-
 get_new_proxy():
     
     proxy = get_proxy_query() # where next_avaliable is in the future, sort by success_delta
@@ -52,4 +40,3 @@ get_new_proxy():
         else:
             proxy.success_delta -= 1
             proxy.failed_count += 1
-            next_avaliable = NOW() + 5 minutes      
