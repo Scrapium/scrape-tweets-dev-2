@@ -51,7 +51,8 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
         }
 
         while (data.hasRemaining()) {
-            data.get();
+            char str = data.get();
+            System.out.print(str);
         }
 
         if (endOfStream) {

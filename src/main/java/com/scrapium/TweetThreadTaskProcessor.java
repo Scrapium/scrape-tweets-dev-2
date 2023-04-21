@@ -2,9 +2,14 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.utils.DebugLogger;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
@@ -13,6 +18,8 @@ import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 
+import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -76,11 +83,15 @@ public class TweetThreadTaskProcessor {
             coroutineCount.incrementAndGet();
 
             final BasicHttpRequest request = BasicRequestBuilder.get()
-                    .setHttpHost(new HttpHost("httpforever.com"))
-                    .setPath("/")
+                    .setHttpHost(new HttpHost("api.my-ip.io"))
+                    .setPath("/ip.txt")
                     .build();
 
-            //System.out.println("Consumer Count: " + this.consumerQueue.size());
+
+            // ADD PROXY TO CLIENT
+            // TODO: ...
+
+
 
             TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, coroutineCount, scraper);
             this.consumerQueue.add(consumer);
