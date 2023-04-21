@@ -1,5 +1,6 @@
 package com.scrapium;
 
+import com.scrapium.proxium.Proxy;
 import com.scrapium.utils.DebugLogger;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -70,6 +71,7 @@ public class TweetThreadTaskProcessor {
 
         try {
             TweetTask task = this.taskQueue.take();
+            Proxy proxy = scraper.proxyService.getNewProxy(0);
 
             coroutineCount.incrementAndGet();
 

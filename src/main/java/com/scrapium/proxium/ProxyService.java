@@ -7,12 +7,12 @@ import com.scrapium.utils.TimeUtils;
 import java.sql.*;
 import java.util.*;
 
-public class ProxyList {
+public class ProxyService {
 
     final private int LIST_SIZE = 30; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
-    public ProxyList() {
+    public ProxyService() {
 
         this.proxyList = new ArrayList<Proxy>();
     }
@@ -24,8 +24,6 @@ public class ProxyList {
 
     // use synchronized (list) across threads.
     private void sync() {
-
-        System.out.println("-- called sync -- ");
 
         // Create an iterator for the ArrayList
 
@@ -57,6 +55,7 @@ public class ProxyList {
                     Timestamp newLastUpdated = cachedProxy.getLastUpdated().after(realProxy.getLastUpdated()) ? cachedProxy.getLastUpdated() : realProxy.getLastUpdated();
                     int newFailedCount = cachedProxy.getFailedCount() - cachedProxy.getOriginalFailedCount() + realProxy.getFailedCount();
 
+                    if(newUsageCount >= 100000000){ newUsageCount = 100000000; }
                     if(newSuccessDelta <= -50000) { newSuccessDelta = -50000; }
                     if(newSuccessDelta >= 50000) { newSuccessDelta = 50000; }
                     if(newFailedCount >= 500) { newFailedCount = 500; }
@@ -93,7 +92,6 @@ public class ProxyList {
         // add check for if no proxies are available.
 
         Random random = new Random();
-
 
         if(this.proxyList.size() == 0){
             try {

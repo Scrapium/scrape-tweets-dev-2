@@ -1,14 +1,33 @@
 package com.scrapium;
 
+import com.scrapium.proxium.ProxyService;
 import com.scrapium.utils.DebugLogger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scraper {
 
+    /*
+        ProxyList proxylist = new ProxyList();
+
+        while(true){
+            proxylist.syncAndRefresh();
+
+            Proxy proxy = proxylist.getNewProxy(0);
+
+            proxy.onSuccess();
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+     */
+    public ProxyService proxyService;
     public long conSocketTimeout;
     private int consumerCount;
     public int maxCoroutineCount;
@@ -24,6 +43,9 @@ public class Scraper {
     // the number of coroutines currently running
 
     public Scraper(int consumerCount, int maxCoroutineCount, int conSocketTimeout) {
+
+        this.proxyService = new ProxyService();
+        this.proxyService.syncAndRefresh();
 
         this.consumerCount = consumerCount;
         this.maxCoroutineCount = maxCoroutineCount;
