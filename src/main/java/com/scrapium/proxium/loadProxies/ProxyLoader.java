@@ -195,7 +195,8 @@ public class ProxyLoader {
                             "",
                             new Timestamp(0L),
                             0,
-                            0
+                            0,
+                            new Timestamp(0L)
                     );
 
                     try {

@@ -13,6 +13,7 @@ CREATE TABLE proxies (
     guest_token VARCHAR(20),
     guest_token_updated TIMESTAMP DEFAULT 'epoch',
     success_delta INT DEFAULT 0 CHECK (success_delta >= -50000 AND success_delta <= 50000),
-    failed_count INT DEFAULT 0 CHECK (failed_count >= 0 AND failed_count <= 1000)
+    failed_count INT DEFAULT 0 CHECK (failed_count >= 0 AND failed_count <= 500),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 --rollback DROP TABLE proxies;

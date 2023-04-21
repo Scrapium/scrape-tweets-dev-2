@@ -1,6 +1,7 @@
 package com.scrapium.proxium;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Proxy {
 
@@ -16,6 +17,10 @@ public class Proxy {
     private volatile Timestamp guestTokenUpdated; // make it volatile for atomic updates
     private volatile int successDelta; // make it volatile for atomic updates
     private volatile int failedCount; // make it volatile for atomic updates
+
+
+
+    private volatile Timestamp lastUpdated; // make it volatile for atomic updates
 
     public int getOriginalUsageCount() {
         return originalUsageCount;
@@ -33,7 +38,7 @@ public class Proxy {
 
 
     // Constructor with all parameters
-    public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount) {
+    public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount, Timestamp lastUpdated) {
         this.id = id;
         this.connString = connString;
         this.ipAddress = ipAddress;
@@ -50,6 +55,8 @@ public class Proxy {
         this.originalUsageCount = usageCount;
         this.originalSuccessDelta = successDelta;
         this.originalFailedCount = failedCount;
+
+        this.lastUpdated = lastUpdated;
     }
 
     public int getId() {
@@ -154,6 +161,31 @@ public class Proxy {
 
     public void setOriginalFailedCount(int originalFailedCount) {
         this.originalFailedCount = originalFailedCount;
+    }
+
+    public Timestamp getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(Timestamp lastUpdated) {
+        if(lastUpdated.after(this.lastUpdated)){
+            this.lastUpdated = lastUpdated;
+        }
+    }
+
+
+    public void onSuccess(){
+        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
+        this.usageCount += 1;
+        this.successDelta += 1;
+        this.failedCount = 0;
+    }
+
+    public void onFailure(){
+        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
+        this.usageCount += 1;
+        this.successDelta -= 1;
+        this.failedCount += 1;
     }
 
     @Override

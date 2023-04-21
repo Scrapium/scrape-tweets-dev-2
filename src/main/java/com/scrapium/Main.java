@@ -2,6 +2,7 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.proxium.ProxyList;
+import com.scrapium.proxium.loadProxies.ProxyLoader;
 import com.scrapium.utils.TimeUtils;
 
 import java.util.HashMap;
@@ -13,6 +14,8 @@ import java.util.Map;
 public class Main {
 
     public static void main(String[] args) {
+
+
         ProxyList pl = new ProxyList();
 
         while(true){
@@ -20,9 +23,13 @@ public class Main {
 
             Proxy proxy = pl.getNewProxy(0);
 
+            proxy.onSuccess();
+
+
+
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

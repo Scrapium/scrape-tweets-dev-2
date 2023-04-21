@@ -5,13 +5,11 @@ import com.scrapium.DatabaseConnection;
 import com.scrapium.utils.TimeUtils;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 public class ProxyList {
 
-    final private int LIST_SIZE = 3;
+    final private int LIST_SIZE = 30; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
     public ProxyList() {
@@ -26,15 +24,9 @@ public class ProxyList {
 
     // use synchronized (list) across threads.
     private void sync() {
+
         System.out.println("-- called sync -- ");
-        /*
-            this.usageCount = usageCount; // mod
-            this.nextAvailable = nextAvailable; // update latest
-            this.guestToken = guestToken; // update latest
-            this.guestTokenUpdated = guestTokenUpdated; // update latest
-            this.successDelta = successDelta;   // mod
-            this.failedCount = failedCount; // mod
-         */
+
         // Create an iterator for the ArrayList
 
         ArrayList<Proxy> proxyListClone = (ArrayList<Proxy>) this.proxyList.clone();
@@ -62,17 +54,25 @@ public class ProxyList {
                     String newGuestToken = cachedProxy.getGuestTokenUpdated().after(realProxy.getGuestTokenUpdated()) ? cachedProxy.getGuestToken() : realProxy.getGuestToken();
                     Timestamp newGuestTokenUpdated = cachedProxy.getGuestTokenUpdated().after(realProxy.getGuestTokenUpdated()) ? cachedProxy.getGuestTokenUpdated() : realProxy.getGuestTokenUpdated();
                     int newSuccessDelta = cachedProxy.getSuccessDelta() - cachedProxy.getOriginalSuccessDelta() + realProxy.getSuccessDelta();
-                    int newFailedCount = cachedProxy.getFailedCount() - cachedProxy.getOriginalFailedCount() + realProxy.getSuccessDelta();
+                    Timestamp newLastUpdated = cachedProxy.getLastUpdated().after(realProxy.getLastUpdated()) ? cachedProxy.getLastUpdated() : realProxy.getLastUpdated();
+                    int newFailedCount = cachedProxy.getFailedCount() - cachedProxy.getOriginalFailedCount() + realProxy.getFailedCount();
 
-                    String updateSql = "UPDATE proxies SET usage_count=?, next_available=?, guest_token=?, guest_token_updated=?, success_delta=?, failed_count=? WHERE id=?";
+                    if(newSuccessDelta <= -50000) { newSuccessDelta = -50000; }
+                    if(newSuccessDelta >= 50000) { newSuccessDelta = 50000; }
+                    if(newFailedCount >= 500) { newFailedCount = 500; }
+
+                    String updateSql = "UPDATE proxies SET usage_count=?, next_available=?, guest_token=?, guest_token_updated=?, success_delta=?, failed_count=?, last_updated=? WHERE id=?";
+
                     PreparedStatement statement = connection.prepareStatement(updateSql);
+
                     statement.setInt(1, newUsageCount); // set the new usage_count
                     statement.setTimestamp(2, newNextAvailable); // set the new next_available
                     statement.setString(3, newGuestToken); // set the new guest_token
                     statement.setTimestamp(4, newGuestTokenUpdated); // set the new guest_tokens_updated
                     statement.setInt(5, newSuccessDelta); // set the new success_delta
                     statement.setInt(6, newFailedCount); // set the new failed_count
-                    statement.setInt(7, cachedProxy.getId()); // set the id of the proxy to update
+                    statement.setTimestamp(7, newLastUpdated); // set the new failed_count
+                    statement.setInt(8, cachedProxy.getId()); // set the id of the proxy to update
 
                     int rowsAffected = statement.executeUpdate();
                     //System.out.println("Rows affected: " + rowsAffected);
@@ -90,31 +90,44 @@ public class ProxyList {
 
     public Proxy getNewProxy(int depth){
 
+        // add check for if no proxies are available.
+
         Random random = new Random();
-        int randomIndex = random.nextInt(this.proxyList.size());
 
-        Proxy proxy = this.proxyList.get(randomIndex);
 
-        for (Proxy proxy2: proxyList){
-            // run an in-memory "SQL query"
+        if(this.proxyList.size() == 0){
+            try {
+                System.out.println("Oops! Proxy cache is empty! A query condition has failed.");
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return getNewProxy(depth + 1);
         }
 
-        //if(depth < 100){
-            if(proxy.getUsageCount() > 500){
-                proxy.setUsageCount(0);
-                proxy.setFailedCount(0);
-                proxy.setNextAvailable(TimeUtils.nowPlusMinutes(15));
-                return getNewProxy(depth + 1);
-            }
+        int randomIndex = random.nextInt(this.proxyList.size());
+        Proxy proxy = this.proxyList.get(randomIndex);
 
-            if(proxy.getUsageCount() > 500){
-                proxy.setUsageCount(0);
-                proxy.setFailedCount(0);
-                proxy.setNextAvailable(TimeUtils.nowPlusMinutes(10));
-                return getNewProxy(depth + 1);
+        Collections.sort(proxyList, new Comparator<Proxy>() {
+            @Override
+            public int compare(Proxy p1, Proxy p2) {
+                return p1.getSuccessDelta() - p2.getSuccessDelta();
             }
-       // }
+        });
 
+        if(proxy.getFailedCount() > 100){
+            proxy.setUsageCount(0);
+            proxy.setFailedCount(0);
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(15));
+            return getNewProxy(depth + 1);
+        }
+
+        if(proxy.getUsageCount() >= 800){
+            proxy.setUsageCount(0);
+            proxy.setFailedCount(0);
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(10));
+            return getNewProxy(depth + 1);
+        }
 
 
         return proxy;
@@ -145,7 +158,8 @@ public class ProxyList {
                         resultSet.getString("guest_token"),
                         resultSet.getTimestamp("guest_token_updated"),
                         resultSet.getInt("success_delta"),
-                        resultSet.getInt("failed_count")
+                        resultSet.getInt("failed_count"),
+                        resultSet.getTimestamp("last_updated")
                 );
 
                 return proxy;
@@ -188,7 +202,8 @@ public class ProxyList {
                         resultSet.getString("guest_token"),
                         resultSet.getTimestamp("guest_token_updated"),
                         resultSet.getInt("success_delta"),
-                        resultSet.getInt("failed_count")
+                        resultSet.getInt("failed_count"),
+                        resultSet.getTimestamp("last_updated")
                 );
 
                 proxyList.add(proxy);
