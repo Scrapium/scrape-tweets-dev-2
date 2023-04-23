@@ -27,6 +27,7 @@ public class TweetThread  extends ThreadBase implements Runnable {
     @Override
     public void run() {
         while (this.running) {
+            //System.out.println("loop");
             try {
                 if (this.taskQueue.size() > 0 && this.coroutineCount.get() < scraper.maxCoroutineCount) {
                     DebugLogger.log("TweetThread: Ran cycle");

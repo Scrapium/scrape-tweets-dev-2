@@ -79,6 +79,8 @@ public class Proxy {
         return ipAddress;
     }
 
+    public String getHostName(){ return ipAddress; }
+
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }

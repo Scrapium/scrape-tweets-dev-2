@@ -1,7 +1,13 @@
 package com.scrapium;
 
 import com.scrapium.tests.Benchmark;
-
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Socket;
 // makes sense to use PostgreSQL for data, and Redis for caching & analytics
 
 
@@ -28,7 +34,7 @@ public class Main {
         // scraper.logger.successRequestCount.get() - Will get the amount of total successful requests since .scrape() is called.
         // scraper.logger.failedRequestCount.get() - Will get the amount of total failed requests since .scrape() is called.
 
-        Scraper scraper = new Scraper(1, 10, 10);
+        Scraper scraper = new Scraper(1, 1, 10);
         scraper.scrape();
 
     }

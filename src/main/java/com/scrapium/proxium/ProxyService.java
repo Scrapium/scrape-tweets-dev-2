@@ -83,11 +83,14 @@ public class ProxyService {
 
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     public Proxy getNewProxy(int depth){
+
+        System.out.println("Requested new proxy");
 
         // add check for if no proxies are available.
 
@@ -183,7 +186,7 @@ public class ProxyService {
 
         try (Connection connection = DatabaseConnection.getConnection()) {
 
-            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
 
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet resultSet = statement.executeQuery();

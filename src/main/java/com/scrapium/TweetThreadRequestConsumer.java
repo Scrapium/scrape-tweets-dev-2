@@ -1,5 +1,6 @@
 package com.scrapium;
 
+import com.scrapium.proxium.Proxy;
 import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
@@ -14,11 +15,13 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
     private final AtomicInteger coroutineCount;
     private final Scraper scraper;
     private final TweetThreadTaskProcessor processor;
+    private final Proxy proxy;
     public volatile boolean shouldCancel;
 
     public volatile boolean isFinished;
-    public TweetThreadRequestConsumer(TweetThreadTaskProcessor tweetThreadTaskProcessor, AtomicInteger coroutineCount, Scraper scraper) {
+    public TweetThreadRequestConsumer(TweetThreadTaskProcessor tweetThreadTaskProcessor, Proxy proxy, AtomicInteger coroutineCount, Scraper scraper) {
         this.processor = tweetThreadTaskProcessor;
+        this.proxy = proxy;
         this.coroutineCount = coroutineCount;
         this.scraper = scraper;
         this.shouldCancel = false;
@@ -31,9 +34,11 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
         coroutineCount.decrementAndGet();
 
         if (response.getCode() != 200) {
+            System.out.println("code not 200, but " + response.getCode());
             scraper.logger.increaseFailedRequestCount();
             shouldCancel = true;
         } else {
+            System.out.println("code 200");
             scraper.logger.increaseSuccessRequestCount();
         }
     }
@@ -52,7 +57,7 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
         while (data.hasRemaining()) {
             char str = data.get();
-            System.out.print(str);
+            //System.out.print(str);
         }
 
         if (endOfStream) {
