@@ -9,7 +9,7 @@ import java.util.*;
 
 public class ProxyService {
 
-    final private int LIST_SIZE = 30; // proxy size to reload into memory
+    final private int LIST_SIZE = 100; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
     public ProxyService() {
@@ -90,7 +90,7 @@ public class ProxyService {
 
     public Proxy getNewProxy(int depth){
 
-        System.out.println("Requested new proxy");
+        //System.out.println("Requested new proxy");
 
         // add check for if no proxies are available.
 
@@ -99,8 +99,9 @@ public class ProxyService {
         if(this.proxyList.size() == 0){
             try {
                 System.out.println("Oops! Proxy cache is empty! A query condition has failed.");
-                Thread.sleep(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
             return getNewProxy(depth + 1);
@@ -186,7 +187,9 @@ public class ProxyService {
 
         try (Connection connection = DatabaseConnection.getConnection()) {
 
-            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+            //String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+            String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+
 
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet resultSet = statement.executeQuery();

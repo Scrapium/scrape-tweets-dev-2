@@ -79,6 +79,8 @@ public class ProxyLoader {
                 System.out.println("https: (" + proxy_list.size() + ") " + entry + ".");
             }
 
+            /*
+
             for(String entry: sock4_links){
                 ArrayList<String> proxy_list = getProxies(entry);
                 sock4_proxies.addAll(proxy_list);
@@ -89,7 +91,7 @@ public class ProxyLoader {
                 ArrayList<String> proxy_list = getProxies(entry);
                 sock5_proxies.addAll(proxy_list);
                 System.out.println("Sock 5: (" + proxy_list.size() + ") " + entry + ".");
-            }
+            } */
 
             System.out.println("===\nTotal Proxies: " + (http_proxies.size() + sock4_proxies.size() + sock5_proxies.size()));
             System.out.println("\nOf which:\n");
@@ -99,13 +101,13 @@ public class ProxyLoader {
 
             try {
                 FileWriter writer = new FileWriter("unchecked_proxies.txt");
-                for(String proxy : sock4_proxies){
+                for(String proxy : http_proxies){
                     writer.write("https://" + proxy + "\n");
                 }
                 for(String proxy : sock4_proxies){
                     writer.write("socks4://" + proxy + "\n");
                 }
-                for(String proxy : sock4_proxies){
+                for(String proxy : sock5_proxies){
                     writer.write("socks5://" + proxy + "\n");
                 }
 
@@ -178,7 +180,7 @@ public class ProxyLoader {
                     String proxy_entry = _proxy_entry.replaceAll("[\\r\\n]+", "");
 
                     String connString = proxy_entry;
-                    String ip = extractWithPattern(proxy_entry, "(?<=\\/\\/)(?:\\d{1,3}\\.){3}\\d{1,3}");
+                    String ip = extractWithPattern(proxy_entry, "(?:\\d{1,3}\\.){3}\\d{1,3}");
                     String port = extractWithPattern(proxy_entry, "(?<=:)(\\d+)");
 
 
@@ -202,6 +204,7 @@ public class ProxyLoader {
                     try {
                         addProxyEntry(connection, proxy);
                     } catch (SQLException e) {
+                        e.printStackTrace();
                         if (e.getMessage().contains("proxies_conn_string_key")) {
                             System.out.println("Duplicate conn_string entry. Skipping insertion.");
                         } else {

@@ -29,6 +29,9 @@ public class TweetThread  extends ThreadBase implements Runnable {
         while (this.running) {
             //System.out.println("loop");
             try {
+                //System.out.println("tweetThread coroutine count = " + this.coroutineCount.get());
+                //System.out.println("tweetThread taskQueue = " + this.taskQueue.size());
+
                 if (this.taskQueue.size() > 0 && this.coroutineCount.get() < scraper.maxCoroutineCount) {
                     DebugLogger.log("TweetThread: Ran cycle");
                     DebugLogger.log("TweetThread: Task Taken");
@@ -38,12 +41,12 @@ public class TweetThread  extends ThreadBase implements Runnable {
                 } else {
 
                     if(this.taskQueue.size() == 0){
-                        DebugLogger.log("Skipping thread execution!");
-                        DebugLogger.log("  Reason: QUEUE EMPTY");
+                        //System.out.println("Skipping thread execution!");
+                        //System.out.println("  Reason: QUEUE EMPTY");
                     }
                     if(this.coroutineCount.get() >= scraper.maxCoroutineCount){
-                        //DebugLogger.log("Skipping thread execution!");
-                        //DebugLogger.log("  Reason: MAX CO-ROUTINES (" + this.coroutineCount.get() + "/" + this.maxCoroutineCount + ")");
+                        //System.out.println("Skipping thread execution!");
+                        //System.out.println("  Reason: MAX CO-ROUTINES (" + this.coroutineCount.get() + "/" + scraper.maxCoroutineCount + ")");
                     }
 
                     Thread.sleep(50); // Sleep when the maximum number of tasks are being executed

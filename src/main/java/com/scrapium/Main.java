@@ -1,5 +1,7 @@
 package com.scrapium;
 
+import com.scrapium.proxium.ProxyService;
+import com.scrapium.proxium.loadProxies.ProxyLoader;
 import com.scrapium.tests.Benchmark;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,9 +36,14 @@ public class Main {
         // scraper.logger.successRequestCount.get() - Will get the amount of total successful requests since .scrape() is called.
         // scraper.logger.failedRequestCount.get() - Will get the amount of total failed requests since .scrape() is called.
 
-        Scraper scraper = new Scraper(1, 1, 10);
+        //Scraper scraper = new Scraper(1, 1, 10);
+
+        Scraper scraper = new Scraper(8, 200, 10);
         scraper.scrape();
 
+        //ProxyLoader.findProxies();
+        // check proxies
+        //ProxyLoader.loadProxies();
     }
 
 

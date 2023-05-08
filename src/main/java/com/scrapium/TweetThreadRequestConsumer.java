@@ -32,19 +32,20 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
     @Override
     protected void start(HttpResponse response, ContentType contentType) throws HttpException, IOException {
 
-        coroutineCount.decrementAndGet();
+        /*
+        coroutineCount.incrementAndGet();
 
-        System.out.println("\n> Started new request!!!\n");
+        //System.out.println("\n> Started new request!!!\n");
 
         if (response.getCode() != 200) {
-            System.out.println("code not 200, but " + response.getCode());
+            DebugLogger.log("code not 200, but " + response.getCode());
             scraper.logger.increaseFailedRequestCount();
-            releaseResources();
             shouldCancel = true;
+            releaseResources();
         } else {
-            System.out.println("code 200");
+            DebugLogger.log("code 200");
             scraper.logger.increaseSuccessRequestCount();
-        }
+        } */
     }
 
     @Override
@@ -54,6 +55,7 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     protected void data(CharBuffer data, boolean endOfStream) throws IOException {
+        /*
         if (shouldCancel) {
             releaseResources();
             return;
@@ -65,8 +67,9 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
         }
 
         if (endOfStream) {
+            coroutineCount.decrementAndGet();
             releaseResources();
-        }
+        } */
     }
 
     @Override
@@ -76,18 +79,24 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     public void failed(Exception cause) {
+        /*
         if (!shouldCancel) {
-            coroutineCount.decrementAndGet();
-            DebugLogger.log("Failed request");
-            scraper.logger.increaseFailedRequestCount();
-            releaseResources();
+            shouldCancel = true;
         }
+
+        DebugLogger.log("Failed request");
+        //cause.printStackTrace();
+        scraper.logger.increaseFailedRequestCount();
+        releaseResources(); */
     }
 
     @Override
     public void releaseResources() {
+        /*
         // Release resources here
+
         this.isFinished = true;
         this.processor.removeConsumerFromQueue(this);
+        */
     }
 }

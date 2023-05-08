@@ -2,15 +2,18 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.utils.DebugLogger;
+import org.apache.hc.client5.http.HttpRequestRetryStrategy;
 import org.apache.hc.client5.http.HttpRoute;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.AsyncHttpRequestRetryExec;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.routing.HttpRoutePlanner;
@@ -102,9 +105,10 @@ public class TweetThreadTaskProcessor {
 
             TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, proxy, coroutineCount, scraper);
             this.consumerQueue.add(consumer);
+
+
             TweetTask task = this.taskQueue.take();
 
-            //System.out.println("\n\nTaken new task [v]\n\n");
 
 
             final SSLContext sslcontext = SSLContexts.custom()
@@ -112,7 +116,7 @@ public class TweetThreadTaskProcessor {
                     .build();
 
             IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
-                    .setSoTimeout(Timeout.ofSeconds(3))
+                    .setSoTimeout(Timeout.ofSeconds(5))
                     .build();
 
             final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
@@ -120,29 +124,24 @@ public class TweetThreadTaskProcessor {
                     .build();
 
             RequestConfig config = RequestConfig.custom()
-                    /*
-                    .setConnectTimeout(Timeout.ofMilliseconds(1000L))
-                    .setConnectionRequestTimeout(Timeout.ofMilliseconds(1000L))
-                    .setResponseTimeout(Timeout.ofMilliseconds(1000L))
-                    */
                     .setConnectionRequestTimeout(Timeout.ofSeconds(2))
-                    .setConnectTimeout(Timeout.ofSeconds(2))
-                    .setResponseTimeout(Timeout.ofSeconds(2))
+                    .setConnectTimeout(Timeout.ofSeconds(15))
+                    .setResponseTimeout(Timeout.ofSeconds(8))
                     .build();
 
 
             ConnectionConfig oConnectionConfig = ConnectionConfig.custom()
-                    .setConnectTimeout(Timeout.ofMilliseconds(1000L))
-                    .setSocketTimeout(Timeout.ofMilliseconds(1000L))
-                    .setTimeToLive(Timeout.ofMilliseconds(1000L))
+                    .setConnectTimeout(Timeout.ofSeconds(15))
+                    .setSocketTimeout(Timeout.ofSeconds(8))
+                    .setTimeToLive(Timeout.ofSeconds(10))
                     .build();
 
-            PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
+            PoolingAsyncClientConnectionManager connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
                     .setMaxConnPerRoute(2000)
                     .setTlsStrategy(tlsStrategy)
                     .setDefaultConnectionConfig(oConnectionConfig)
                     .setMaxConnTotal(2000)
-                    ;
+                    .build();
 
             final HttpHost httpProxy = new HttpHost("http", proxy.getHostName(), Integer.valueOf(proxy.getPort()));
 
@@ -150,60 +149,21 @@ public class TweetThreadTaskProcessor {
                     .setProxy(httpProxy)
                     .setIOReactorConfig(ioReactorConfig)
                     .setDefaultRequestConfig(config)
-                    .setConnectionManager(connectionManagerBuilder.build())
+                    .disableAutomaticRetries()
+                    .setConnectionManager(connectionManagerBuilder)
                     .build();
-
 
             client.start();
 
-
-            coroutineCount.incrementAndGet();
-
-
-            
-
             final BasicHttpRequest request = BasicRequestBuilder.get()
-                    .setHttpHost(new HttpHost("google.com"))
+                    .setHttpHost(new HttpHost("example.com"))
                     .setPath("/")
 
                     .build();
 
-            //System.out.println("Running .execute on client object");
-
-
-
-            final Future<Void> future = client.execute(
-                    new BasicRequestProducer(request, null),
-                    consumer, null);
-
-
-
-
-
-            /*
-                try (final CloseableHttpClient httpclient = HttpClients.custom()
-                        .setProxy(proxy)
-                        .build()) {
-
-                    final RequestConfig config = RequestConfig.custom()
-                            .build();
-                    final HttpGet request = new HttpGet("/get");
-                    request.setConfig(config);
-
-                    System.out.println("Executing request " + request.getMethod() + " " + request.getUri() +
-                            " via " + proxy);
-
-                    httpclient.execute(target, request, response -> {
-                        System.out.println("----------------------------------------");
-                        System.out.println(request + "->" + new StatusLine(response));
-                        EntityUtils.consume(response.getEntity());
-                        return null;
-                    });
-                }
-
-             */
-
-
+                final Future<Void> future = client.execute(
+                        new BasicRequestProducer(request, null),
+                        consumer, null);
 
 
         } catch (InterruptedException e) {
@@ -250,6 +210,7 @@ public class TweetThreadTaskProcessor {
                 try {
                     Thread.sleep(10000);
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
                 }
             }

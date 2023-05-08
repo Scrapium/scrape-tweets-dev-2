@@ -39,6 +39,7 @@ public class Scraper {
     public LoggingThread logger;
     private ProducerThread producer;
     private ArrayList<ThreadBase> threads;
+    private ProxiesThread proxies;
 
     // the number of coroutines currently running
 
@@ -51,7 +52,7 @@ public class Scraper {
         this.maxCoroutineCount = maxCoroutineCount;
         this.conSocketTimeout = conSocketTimeout;
 
-        this.threadPool = Executors.newFixedThreadPool(consumerCount + 2);
+        this.threadPool = Executors.newFixedThreadPool(consumerCount + 3);
         this.tweetQueue = new LinkedBlockingQueue<>();
         this.threads = new ArrayList<ThreadBase>();
 
@@ -85,6 +86,10 @@ public class Scraper {
         this.producer = new ProducerThread(this, tweetQueue);
         threads.add(this.producer);
         threadPool.submit(this.producer);
+
+        this.proxies = new ProxiesThread(this, proxyService);
+        threads.add(this.proxies);
+        threadPool.submit(this.proxies);
 
         for (int i = 0; i < consumerCount; i++) {
             DebugLogger.log("Scraper: Created consumer thread.");

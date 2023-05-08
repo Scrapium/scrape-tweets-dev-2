@@ -20,13 +20,17 @@ public class ProducerThread extends ThreadBase implements Runnable {
     public void run() {
         while (this.running) {
             if (scraper.tweetQueue.size() < 5000) {
+               // System.out.println("Adding (" + (5000 - scraper.tweetQueue.size()) + ") tasks to queue.");
                 for (int i = 0; i < 5000 - scraper.tweetQueue.size(); i++) {
                     //DebugLogger.log("Producer: Added item to TaskQueue");
                     this.taskQueue.add(new TweetTask("Example tweet search"));
+
                 }
+
             } else {
+               // System.out.println("tweetqueue size = " + scraper.tweetQueue.size());
                 try {
-                    Thread.sleep(0);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);

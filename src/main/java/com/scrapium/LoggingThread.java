@@ -54,8 +54,6 @@ public class LoggingThread extends ThreadBase implements Runnable {
             this.lastLogEpoch = System.currentTimeMillis() / 1000;
 
 
-            scraper.proxyService.syncAndRefresh();
-
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

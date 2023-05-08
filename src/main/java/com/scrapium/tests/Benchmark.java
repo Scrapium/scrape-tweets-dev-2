@@ -40,6 +40,7 @@ public class Benchmark {
                     try {
                         Thread.sleep((long) timePerTest);
                     } catch (InterruptedException e) {
+                        e.printStackTrace();
                         throw new RuntimeException(e);
                     }
 
@@ -66,6 +67,7 @@ public class Benchmark {
                     try {
                         Thread.sleep(10000);
                     } catch (InterruptedException e) {
+                        e.printStackTrace();
                         throw new RuntimeException(e);
                     }
                 }
