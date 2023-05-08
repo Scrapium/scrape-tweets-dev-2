@@ -104,6 +104,8 @@ public class TweetThreadTaskProcessor {
             this.consumerQueue.add(consumer);
             TweetTask task = this.taskQueue.take();
 
+            //System.out.println("\n\nTaken new task [v]\n\n");
+
 
             final SSLContext sslcontext = SSLContexts.custom()
                     .loadTrustMaterial(null, new TrustAllStrategy())
@@ -118,10 +120,16 @@ public class TweetThreadTaskProcessor {
                     .build();
 
             RequestConfig config = RequestConfig.custom()
+                    /*
                     .setConnectTimeout(Timeout.ofMilliseconds(1000L))
                     .setConnectionRequestTimeout(Timeout.ofMilliseconds(1000L))
                     .setResponseTimeout(Timeout.ofMilliseconds(1000L))
+                    */
+                    .setConnectionRequestTimeout(Timeout.ofSeconds(2))
+                    .setConnectTimeout(Timeout.ofSeconds(2))
+                    .setResponseTimeout(Timeout.ofSeconds(2))
                     .build();
+
 
             ConnectionConfig oConnectionConfig = ConnectionConfig.custom()
                     .setConnectTimeout(Timeout.ofMilliseconds(1000L))
@@ -143,7 +151,6 @@ public class TweetThreadTaskProcessor {
                     .setIOReactorConfig(ioReactorConfig)
                     .setDefaultRequestConfig(config)
                     .setConnectionManager(connectionManagerBuilder.build())
-
                     .build();
 
 
@@ -158,9 +165,12 @@ public class TweetThreadTaskProcessor {
             final BasicHttpRequest request = BasicRequestBuilder.get()
                     .setHttpHost(new HttpHost("google.com"))
                     .setPath("/")
+
                     .build();
 
-            System.out.println("making request");
+            //System.out.println("Running .execute on client object");
+
+
 
             final Future<Void> future = client.execute(
                     new BasicRequestProducer(request, null),
@@ -200,10 +210,15 @@ public class TweetThreadTaskProcessor {
             e.printStackTrace();
             throw new RuntimeException(e);
         } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         } catch (KeyStoreException e) {
+            e.printStackTrace();
+
             throw new RuntimeException(e);
         } catch (KeyManagementException e) {
+            e.printStackTrace();
+
             throw new RuntimeException(e);
         }
     }

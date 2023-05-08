@@ -1,6 +1,7 @@
 package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
+import com.scrapium.utils.DebugLogger;
 import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
@@ -33,9 +34,12 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
         coroutineCount.decrementAndGet();
 
+        System.out.println("\n> Started new request!!!\n");
+
         if (response.getCode() != 200) {
             System.out.println("code not 200, but " + response.getCode());
             scraper.logger.increaseFailedRequestCount();
+            releaseResources();
             shouldCancel = true;
         } else {
             System.out.println("code 200");
@@ -62,7 +66,6 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
         if (endOfStream) {
             releaseResources();
-            coroutineCount.decrementAndGet();
         }
     }
 
@@ -73,7 +76,12 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     public void failed(Exception cause) {
-        // Handle failure here
+        if (!shouldCancel) {
+            coroutineCount.decrementAndGet();
+            DebugLogger.log("Failed request");
+            scraper.logger.increaseFailedRequestCount();
+            releaseResources();
+        }
     }
 
     @Override
