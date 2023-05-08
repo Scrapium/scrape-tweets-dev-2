@@ -21,9 +21,9 @@ public class ProxiesThread  extends ThreadBase implements Runnable {
     public void run() {
         while (this.running) {
             this.proxyService.syncAndRefresh();
-            System.out.println("Synced proxies");
+            //System.out.println("Synced proxies");
             try {
-                Thread.sleep(4000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

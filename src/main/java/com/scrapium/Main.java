@@ -38,7 +38,7 @@ public class Main {
 
         //Scraper scraper = new Scraper(1, 1, 10);
 
-        Scraper scraper = new Scraper(8, 200, 10);
+        Scraper scraper = new Scraper(4, 2000, 10);
         scraper.scrape();
 
         //ProxyLoader.findProxies();

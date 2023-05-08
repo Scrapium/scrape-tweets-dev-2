@@ -9,7 +9,8 @@ import java.util.*;
 
 public class ProxyService {
 
-    final private int LIST_SIZE = 100; // proxy size to reload into memory
+
+    final private int LIST_SIZE = 10; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
     public ProxyService() {
@@ -47,7 +48,7 @@ public class ProxyService {
 
                     // calculate difference since proxy was cached, add it to real proxy value
 
-                    int newUsageCount = cachedProxy.getUsageCount() - cachedProxy.getOriginalUsageCount() + realProxy.getUsageCount();
+                    int newUsageCount = cachedProxy.getUsageCount() - cachedProxy.getUsageCount() + realProxy.getUsageCount();
                     Timestamp newNextAvailable = cachedProxy.getNextAvailable().after(realProxy.getNextAvailable()) ? cachedProxy.getNextAvailable() : realProxy.getNextAvailable();
                     String newGuestToken = cachedProxy.getGuestTokenUpdated().after(realProxy.getGuestTokenUpdated()) ? cachedProxy.getGuestToken() : realProxy.getGuestToken();
                     Timestamp newGuestTokenUpdated = cachedProxy.getGuestTokenUpdated().after(realProxy.getGuestTokenUpdated()) ? cachedProxy.getGuestTokenUpdated() : realProxy.getGuestTokenUpdated();
@@ -110,6 +111,7 @@ public class ProxyService {
         int randomIndex = random.nextInt(this.proxyList.size());
         Proxy proxy = this.proxyList.get(randomIndex);
 
+
         Collections.sort(proxyList, new Comparator<Proxy>() {
             @Override
             public int compare(Proxy p1, Proxy p2) {
@@ -118,18 +120,20 @@ public class ProxyService {
         });
 
         if(proxy.getFailedCount() > 100){
-            proxy.setUsageCount(0);
-            proxy.setFailedCount(0);
-            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(15));
+            proxy.resetFailedCount();
+            proxy.incrementUsageCount();
+            System.out.println("proxy failed exceed: setting next available.");
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(4));
             return getNewProxy(depth + 1);
         }
 
         if(proxy.getUsageCount() >= 800){
-            proxy.setUsageCount(0);
-            proxy.setFailedCount(0);
-            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(10));
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(1));
+            System.out.println("proxy usage exceed: setting next available.");
             return getNewProxy(depth + 1);
         }
+
+        //System.out.println(proxy.getId());
 
 
         return proxy;
@@ -187,9 +191,8 @@ public class ProxyService {
 
         try (Connection connection = DatabaseConnection.getConnection()) {
 
-            //String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
-            String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
-
+            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+            //String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
 
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet resultSet = statement.executeQuery();

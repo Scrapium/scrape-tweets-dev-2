@@ -16,6 +16,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
+import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.routing.HttpRoutePlanner;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
@@ -45,6 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,10 +66,14 @@ public class TweetThreadTaskProcessor {
     private AtomicInteger coroutineCount;
 
     private int requestCount;
+    private IOReactorConfig ioReactorConfig;
+    private RequestConfig config;
+    private AsyncClientConnectionManager connectionManagerBuilder;
 
     // Custom route planner class
 
 
+    private ConcurrentHashMap<Proxy, CloseableHttpAsyncClient> clients;
 
     public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
         this.threadID = threadID;
@@ -77,6 +83,49 @@ public class TweetThreadTaskProcessor {
         this.tweetThreadRunning = running;
         this.consumerQueue = new LinkedBlockingQueue<>();
 
+        this.clients = new ConcurrentHashMap<>();
+
+        final SSLContext sslcontext;
+        try {
+            sslcontext = SSLContexts.custom()
+                    .loadTrustMaterial(null, new TrustAllStrategy())
+                    .build();
+
+            this.ioReactorConfig = IOReactorConfig.custom()
+                    .setSoTimeout(Timeout.ofSeconds(5))
+                    .build();
+
+            final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
+                    .setSslContext(sslcontext)
+                    .build();
+
+            this.config = RequestConfig.custom()
+                    .setConnectionRequestTimeout(Timeout.ofSeconds(2))
+                    .setConnectTimeout(Timeout.ofSeconds(15))
+                    .setResponseTimeout(Timeout.ofSeconds(8))
+                    .build();
+
+
+            ConnectionConfig oConnectionConfig = ConnectionConfig.custom()
+                    .setConnectTimeout(Timeout.ofSeconds(15))
+                    .setSocketTimeout(Timeout.ofSeconds(8))
+                    .setTimeToLive(Timeout.ofSeconds(10))
+                    .build();
+
+            this.connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
+                    .setMaxConnPerRoute(2000)
+                    .setTlsStrategy(tlsStrategy)
+                    .setDefaultConnectionConfig(oConnectionConfig)
+                    .setMaxConnTotal(2000)
+                    .build();
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        } catch (KeyManagementException e) {
+            throw new RuntimeException(e);
+        } catch (KeyStoreException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -100,85 +149,40 @@ public class TweetThreadTaskProcessor {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
         try {
-
             Proxy proxy = scraper.proxyService.getNewProxy(0);
-
             TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, proxy, coroutineCount, scraper);
             this.consumerQueue.add(consumer);
 
+            //System.out.println("coroutine count = " + this.coroutineCount.get());
 
             TweetTask task = this.taskQueue.take();
 
-
-
-            final SSLContext sslcontext = SSLContexts.custom()
-                    .loadTrustMaterial(null, new TrustAllStrategy())
-                    .build();
-
-            IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
-                    .setSoTimeout(Timeout.ofSeconds(5))
-                    .build();
-
-            final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
-                    .setSslContext(sslcontext)
-                    .build();
-
-            RequestConfig config = RequestConfig.custom()
-                    .setConnectionRequestTimeout(Timeout.ofSeconds(2))
-                    .setConnectTimeout(Timeout.ofSeconds(15))
-                    .setResponseTimeout(Timeout.ofSeconds(8))
-                    .build();
-
-
-            ConnectionConfig oConnectionConfig = ConnectionConfig.custom()
-                    .setConnectTimeout(Timeout.ofSeconds(15))
-                    .setSocketTimeout(Timeout.ofSeconds(8))
-                    .setTimeToLive(Timeout.ofSeconds(10))
-                    .build();
-
-            PoolingAsyncClientConnectionManager connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
-                    .setMaxConnPerRoute(2000)
-                    .setTlsStrategy(tlsStrategy)
-                    .setDefaultConnectionConfig(oConnectionConfig)
-                    .setMaxConnTotal(2000)
-                    .build();
-
             final HttpHost httpProxy = new HttpHost("http", proxy.getHostName(), Integer.valueOf(proxy.getPort()));
 
-            CloseableHttpAsyncClient client = HttpAsyncClients.custom()
-                    .setProxy(httpProxy)
-                    .setIOReactorConfig(ioReactorConfig)
-                    .setDefaultRequestConfig(config)
-                    .disableAutomaticRetries()
-                    .setConnectionManager(connectionManagerBuilder)
-                    .build();
-
-            client.start();
+            CloseableHttpAsyncClient client = clients.computeIfAbsent(proxy, p -> {
+                CloseableHttpAsyncClient newClient = HttpAsyncClients.custom()
+                        .setIOReactorConfig(ioReactorConfig)
+                        .setDefaultRequestConfig(config)
+                        .setConnectionManager(connectionManagerBuilder)
+                        .disableAutomaticRetries()
+                        .setProxy(httpProxy)
+                        .build();
+                newClient.start();
+                return newClient;
+            });
 
             final BasicHttpRequest request = BasicRequestBuilder.get()
                     .setHttpHost(new HttpHost("example.com"))
                     .setPath("/")
-
                     .build();
 
-                final Future<Void> future = client.execute(
-                        new BasicRequestProducer(request, null),
-                        consumer, null);
+            coroutineCount.incrementAndGet();
 
+            final Future<Void> future = client.execute(
+                    new BasicRequestProducer(request, null),
+                    consumer, null);
 
         } catch (InterruptedException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-
-            throw new RuntimeException(e);
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-
             throw new RuntimeException(e);
         }
     }
@@ -192,10 +196,18 @@ public class TweetThreadTaskProcessor {
      */
     public void closeRequestClient(){
 
+        /*
+                BROKEN
+
+         */
+
+        /*
         for (Iterator<TweetThreadRequestConsumer> iterator = this.consumerQueue.iterator(); iterator.hasNext(); ) {
             TweetThreadRequestConsumer item = iterator.next();
             item.shouldCancel = true;
-        }
+        }*/
+
+        //clients.values().forEach(client -> client.close(CloseMode.GRACEFUL));
 
 
         double startSize = this.consumerQueue.size();

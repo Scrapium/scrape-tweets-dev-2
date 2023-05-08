@@ -1,7 +1,7 @@
 package com.scrapium.proxium;
 
 import java.sql.Timestamp;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Proxy {
 
@@ -11,12 +11,12 @@ public class Proxy {
     private String ipAddress;
     private String port;
     private boolean isSocks;
-    private volatile int usageCount; // make it volatile for atomic updates
-    private volatile Timestamp nextAvailable; // make it volatile for atomic updates
-    private volatile String guestToken; // make it volatile for atomic updates
-    private volatile Timestamp guestTokenUpdated; // make it volatile for atomic updates
-    private volatile int successDelta; // make it volatile for atomic updates
-    private volatile int failedCount; // make it volatile for atomic updates
+    private volatile AtomicInteger usageCount;
+    private volatile Timestamp nextAvailable;
+    private volatile String guestToken;
+    private volatile Timestamp guestTokenUpdated;
+    private volatile AtomicInteger successDelta;
+    private volatile AtomicInteger failedCount;
 
 
 
@@ -45,12 +45,21 @@ public class Proxy {
         this.port = port;
         this.isSocks = isSocks;
 
-        this.usageCount = usageCount; // mod
+        //this.usageCount = usageCount; // mod
+
+        this.usageCount = new AtomicInteger(0);
+
         this.nextAvailable = nextAvailable; // update latest
         this.guestToken = guestToken; // update latest
         this.guestTokenUpdated = guestTokenUpdated; // update latest
-        this.successDelta = successDelta;   // mod
-        this.failedCount = failedCount; // mod
+        //this.successDelta = successDelta;   // mod
+        //this.failedCount = failedCount; // mod
+
+
+
+        this.successDelta = new AtomicInteger(0);
+        this.failedCount = new AtomicInteger(0);
+
 
         this.originalUsageCount = usageCount;
         this.originalSuccessDelta = successDelta;
@@ -102,11 +111,15 @@ public class Proxy {
     }
 
     public int getUsageCount() {
-        return usageCount;
+        return usageCount.get();
     }
 
-    public void setUsageCount(int usageCount) {
-        this.usageCount = usageCount;
+    public void incrementUsageCount() {
+        usageCount.incrementAndGet();
+    }
+
+    public void resetUsageCount() {
+        usageCount.set(0);
     }
 
     public Timestamp getNextAvailable() {
@@ -134,19 +147,27 @@ public class Proxy {
     }
 
     public int getSuccessDelta() {
-        return successDelta;
+        return successDelta.get();
     }
 
-    public void setSuccessDelta(int successDelta) {
-        this.successDelta = successDelta;
+    public void incrementSuccessDelta(){
+        this.successDelta.incrementAndGet();
+    }
+
+    public void resetSuccessDelta(){
+        this.successDelta.set(0);
     }
 
     public int getFailedCount() {
-        return failedCount;
+        return failedCount.get();
     }
 
-    public void setFailedCount(int failedCount) {
-        this.failedCount = failedCount;
+    public void incrementFailedCount() {
+        this.failedCount.incrementAndGet();
+    }
+
+    public void resetFailedCount() {
+        this.failedCount.set(0);
     }
 
     public int getOriginalSuccessDelta() {
@@ -178,16 +199,15 @@ public class Proxy {
 
     public void onSuccess(){
         this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
-        this.usageCount += 1;
-        this.successDelta += 1;
-        this.failedCount = 0;
+        this.usageCount.incrementAndGet();
+        this.successDelta.incrementAndGet();
     }
 
     public void onFailure(){
         this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
-        this.usageCount += 1;
-        this.successDelta -= 1;
-        this.failedCount += 1;
+        this.usageCount.incrementAndGet();
+        this.successDelta.decrementAndGet();
+        this.failedCount.incrementAndGet();
     }
 
     @Override

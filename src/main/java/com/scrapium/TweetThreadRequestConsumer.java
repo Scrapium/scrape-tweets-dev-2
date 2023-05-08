@@ -9,6 +9,7 @@ import org.apache.hc.core5.http.HttpResponse;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Void> {
@@ -19,33 +20,28 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
     private final Proxy proxy;
     public volatile boolean shouldCancel;
 
-    public volatile boolean isFinished;
+    public String response_str = "";
+
+    private final AtomicBoolean isReleased;
+
     public TweetThreadRequestConsumer(TweetThreadTaskProcessor tweetThreadTaskProcessor, Proxy proxy, AtomicInteger coroutineCount, Scraper scraper) {
         this.processor = tweetThreadTaskProcessor;
         this.proxy = proxy;
         this.coroutineCount = coroutineCount;
         this.scraper = scraper;
         this.shouldCancel = false;
-        this.isFinished = false;
+
+        this.isReleased = new AtomicBoolean(false);
     }
 
     @Override
     protected void start(HttpResponse response, ContentType contentType) throws HttpException, IOException {
 
-        /*
-        coroutineCount.incrementAndGet();
-
-        //System.out.println("\n> Started new request!!!\n");
-
-        if (response.getCode() != 200) {
-            DebugLogger.log("code not 200, but " + response.getCode());
-            scraper.logger.increaseFailedRequestCount();
-            shouldCancel = true;
-            releaseResources();
-        } else {
-            DebugLogger.log("code 200");
+        if(response.getCode() == 200){
+            this.proxy.onSuccess();
             scraper.logger.increaseSuccessRequestCount();
-        } */
+        }
+
     }
 
     @Override
@@ -55,21 +51,15 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     protected void data(CharBuffer data, boolean endOfStream) throws IOException {
-        /*
-        if (shouldCancel) {
-            releaseResources();
-            return;
-        }
 
         while (data.hasRemaining()) {
             char str = data.get();
-            //System.out.print(str);
+            response_str += str;
         }
 
         if (endOfStream) {
-            coroutineCount.decrementAndGet();
             releaseResources();
-        } */
+        }
     }
 
     @Override
@@ -79,24 +69,14 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     public void failed(Exception cause) {
-        /*
-        if (!shouldCancel) {
-            shouldCancel = true;
-        }
-
-        DebugLogger.log("Failed request");
-        //cause.printStackTrace();
         scraper.logger.increaseFailedRequestCount();
-        releaseResources(); */
+        this.proxy.onFailure();
     }
 
     @Override
     public void releaseResources() {
-        /*
-        // Release resources here
-
-        this.isFinished = true;
-        this.processor.removeConsumerFromQueue(this);
-        */
+        if (isReleased.compareAndSet(false, true)) {
+            coroutineCount.decrementAndGet();
+        }
     }
 }
