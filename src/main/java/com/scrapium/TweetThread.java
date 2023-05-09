@@ -36,6 +36,7 @@ public class TweetThread  extends ThreadBase implements Runnable {
                     DebugLogger.log("TweetThread: Ran cycle");
                     DebugLogger.log("TweetThread: Task Taken");
                     this.taskProcessor.processNextTask();
+                    //System.out.print(".");
                     DebugLogger.log("Decrementing counter");
 
                 } else {
@@ -57,7 +58,8 @@ public class TweetThread  extends ThreadBase implements Runnable {
             }
         }
 
+        // TODO: readd close request client;
         //System.out.println("closeRequestClient called");
-        this.taskProcessor.closeRequestClient();
+        //this.taskProcessor.closeRequestClient();
     }
 }

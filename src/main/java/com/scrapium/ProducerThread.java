@@ -28,7 +28,7 @@ public class ProducerThread extends ThreadBase implements Runnable {
                 }
 
             } else {
-               // System.out.println("tweetqueue size = " + scraper.tweetQueue.size());
+               //System.out.println("tweetqueue size = " + scraper.tweetQueue.size());
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {

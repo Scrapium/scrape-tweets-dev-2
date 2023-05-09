@@ -39,10 +39,13 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
         //System.out.println(response.getCode());
 
-        if(response.getCode() == 200){
+        coroutineCount.incrementAndGet();
+
+        if(response.getCode() >= 200 && response.getCode() < 300){
             this.proxy.onSuccess();
             scraper.logger.increaseSuccessRequestCount();
         } else {
+            //releaseResources();
         }
 
     }
@@ -74,7 +77,7 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
     public void failed(Exception cause) {
 
 
-       // cause.printStackTrace();
+       //.printStackTrace();
 
         scraper.logger.increaseFailedRequestCount();
 

@@ -2,40 +2,11 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.utils.DebugLogger;
-import org.apache.hc.client5.http.HttpRequestRetryStrategy;
-import org.apache.hc.client5.http.HttpRoute;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.config.ConnectionConfig;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.async.AsyncHttpRequestRetryExec;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
-import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
-import org.apache.hc.client5.http.routing.HttpRoutePlanner;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.client5.http.ssl.TrustAllStrategy;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.HttpRequest;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
-import org.apache.hc.core5.http.message.StatusLine;
-import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
-import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
-import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.http.support.BasicRequestBuilder;
-import org.apache.hc.core5.io.CloseMode;
-import org.apache.hc.core5.reactor.IOReactorConfig;
-import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.util.TimeValue;
-import org.apache.hc.core5.util.Timeout;
-import org.apache.http.Consts;
+import org.asynchttpclient.*;
+import org.asynchttpclient.proxy.ProxyServer;
+
+import static org.asynchttpclient.Dsl.*;
+
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -45,35 +16,26 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TweetThreadTaskProcessor {
+    private final AsyncHttpClient c;
 
     /*
         Notes TODO:
             - AtomicReference isn't efficient (create a new object instead)
      */
 
-    private final Scraper scraper;
+    private Scraper scraper;
     private final BlockingQueue<TweetTask> taskQueue;
     private final int threadID;
-    private BlockingQueue<TweetThreadRequestConsumer> consumerQueue;
     private volatile boolean  tweetThreadRunning;
     private AtomicInteger coroutineCount;
 
     private int requestCount;
-    private IOReactorConfig ioReactorConfig;
-    private RequestConfig config;
-    private AsyncClientConnectionManager connectionManagerBuilder;
-
-    // Custom route planner class
 
 
-    private ConcurrentHashMap<Proxy, CloseableHttpAsyncClient> clients;
 
     public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
         this.threadID = threadID;
@@ -81,65 +43,10 @@ public class TweetThreadTaskProcessor {
         this.taskQueue = taskQueue;
         this.coroutineCount = coroutineCount;
         this.tweetThreadRunning = running;
-        this.consumerQueue = new LinkedBlockingQueue<>();
 
-        this.clients = new ConcurrentHashMap<>();
+        AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder().build();
+        this.c = asyncHttpClient(config);
 
-        final SSLContext sslcontext;
-        try {
-            sslcontext = SSLContexts.custom()
-                    .loadTrustMaterial(null, new TrustAllStrategy())
-                    .build();
-
-            this.ioReactorConfig = IOReactorConfig.custom()
-                    .setSoTimeout(Timeout.ofSeconds(5))
-                    .build();
-
-            final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
-                    .setSslContext(sslcontext)
-                    .build();
-
-            this.config = RequestConfig.custom()
-                    .setConnectionRequestTimeout(Timeout.ofSeconds(2))
-                    .setConnectTimeout(Timeout.ofSeconds(15))
-                    .setResponseTimeout(Timeout.ofSeconds(8))
-                    .build();
-
-
-            ConnectionConfig oConnectionConfig = ConnectionConfig.custom()
-                    .setConnectTimeout(Timeout.ofSeconds(15))
-                    .setSocketTimeout(Timeout.ofSeconds(8))
-                    .setTimeToLive(Timeout.ofSeconds(10))
-                    .build();
-
-            this.connectionManagerBuilder = PoolingAsyncClientConnectionManagerBuilder.create()
-                    .setMaxConnPerRoute(2000)
-                    .setTlsStrategy(tlsStrategy)
-                    .setDefaultConnectionConfig(oConnectionConfig)
-                    .setMaxConnTotal(2000)
-                    .build();
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } catch (KeyManagementException e) {
-            throw new RuntimeException(e);
-        } catch (KeyStoreException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    static class CustomRoutePlanner implements HttpRoutePlanner {
-        private final HttpHost proxyHost;
-
-        CustomRoutePlanner(HttpHost proxyHost) {
-            this.proxyHost = proxyHost;
-        }
-
-        @Override
-        public HttpRoute determineRoute(HttpHost target, HttpContext context) throws HttpException {
-            return new HttpRoute(target, null, proxyHost, "https".equalsIgnoreCase(target.getSchemeName()));
-        }
     }
 
     /*
@@ -148,87 +55,23 @@ public class TweetThreadTaskProcessor {
     public void processNextTask() {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
+        ProxyServer proxy1 = new ProxyServer.Builder("proxy1.example.com", 8080).build();
 
-        try {
-            Proxy proxy = scraper.proxyService.getNewProxy();
-            TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, proxy, coroutineCount, scraper);
-            this.consumerQueue.add(consumer);
+        Request request1 = new RequestBuilder("GET")
+                .setUrl("http://example.com/")
+                //.setProxyServer(proxy1)
+                .build();
 
-            //System.out.println("coroutine count = " + this.coroutineCount.get());
+            c.executeRequest(request1, new handler(c, this));
 
-            TweetTask task = this.taskQueue.take();
-
-            //final HttpHost httpProxy = new HttpHost("http", proxy.getHostName(), Integer.valueOf(proxy.getPort()));
-
-            CloseableHttpAsyncClient client = clients.computeIfAbsent(proxy, p -> {
-                CloseableHttpAsyncClient newClient = HttpAsyncClients.custom()
-                        .setIOReactorConfig(ioReactorConfig)
-                        .setDefaultRequestConfig(config)
-                        .setConnectionManager(connectionManagerBuilder)
-                        .disableAutomaticRetries()
-                       // .setProxy(httpProxy)
-                        .build();
-                newClient.start();
-                return newClient;
-            });
-
-            final BasicHttpRequest request = BasicRequestBuilder.get()
-                    .setHttpHost(new HttpHost("conpiler.io"))
-                    .setPath("/")
-                    .build();
-
-            coroutineCount.incrementAndGet();
-
-            final Future<Void> future = client.execute(
-                    new BasicRequestProducer(request, null),
-                    consumer, null);
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    protected void removeConsumerFromQueue(TweetThreadRequestConsumer consumer) {
-        this.consumerQueue.remove(consumer);
+    public Scraper getScraper(){
+        return this.scraper;
     }
 
-    /*
-        Run in the TweetThreadTaskProcessor when the scraper is stopped
-     */
-    public void closeRequestClient(){
-
-        /*
-                BROKEN
-
-         */
-
-        /*
-        for (Iterator<TweetThreadRequestConsumer> iterator = this.consumerQueue.iterator(); iterator.hasNext(); ) {
-            TweetThreadRequestConsumer item = iterator.next();
-            item.shouldCancel = true;
-        }*/
-
-        //clients.values().forEach(client -> client.close(CloseMode.GRACEFUL));
-
-
-        double startSize = this.consumerQueue.size();
-
-        if(startSize > 0){
-            while(this.consumerQueue.size() > 0){
-                double currentSize = this.consumerQueue.size();
-                int n1 = (int) (50 * (currentSize / startSize));
-                int n2 = (int) 50 - n1;
-                System.out.println("(" + this.threadID + ") [" + "=".repeat(n2) + "-".repeat(n1) +  "]");
-
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        //client.close(CloseMode.GRACEFUL);
+    public LoggingThread getLogger(){
+        return this.scraper.logger;
     }
+
 }
