@@ -9,6 +9,7 @@ import java.sql.SQLException;
 public class DatabaseConnection {
     private static DataSource dataSource;
 
+    /*
     static {
         BasicDataSource ds = new BasicDataSource();
         ds.setUrl("jdbc:postgresql://localhost:5432/scrapium_proxies");
@@ -22,4 +23,5 @@ public class DatabaseConnection {
     public static Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
+     */
 }

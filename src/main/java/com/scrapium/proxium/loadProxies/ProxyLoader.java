@@ -1,8 +1,11 @@
+
 /*
 
         MOVED TO PYTHON SCRIPT
 
 */
+
+/*
 package com.scrapium.proxium.loadProxies;
 
 import com.scrapium.DatabaseConnection;
@@ -46,12 +49,7 @@ public class ProxyLoader {
     }
 
     public static void findProxies() {
-        /*
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            System.out.println("Got connection successfully");
-        } catch (SQLException e) {
-            System.out.println("Failed to get connection!");
-        } */
+
 
 
 
@@ -79,19 +77,19 @@ public class ProxyLoader {
                 System.out.println("https: (" + proxy_list.size() + ") " + entry + ".");
             }
 
-            /*
 
-            for(String entry: sock4_links){
-                ArrayList<String> proxy_list = getProxies(entry);
-                sock4_proxies.addAll(proxy_list);
-                System.out.println("Sock 4: (" + proxy_list.size() + ") " + entry + ".");
-            }
 
-            for(String entry: sock5_links){
-                ArrayList<String> proxy_list = getProxies(entry);
-                sock5_proxies.addAll(proxy_list);
-                System.out.println("Sock 5: (" + proxy_list.size() + ") " + entry + ".");
-            } */
+            //for(String entry: sock4_links){
+           //     ArrayList<String> proxy_list = getProxies(entry);
+            //    sock4_proxies.addAll(proxy_list);
+       //         System.out.println("Sock 4: (" + proxy_list.size() + ") " + entry + ".");
+     //       }
+
+     //       for(String entry: sock5_links){
+      //          ArrayList<String> proxy_list = getProxies(entry);
+      //          sock5_proxies.addAll(proxy_list);
+     //           System.out.println("Sock 5: (" + proxy_list.size() + ") " + entry + ".");
+     //       }
 
             System.out.println("===\nTotal Proxies: " + (http_proxies.size() + sock4_proxies.size() + sock5_proxies.size()));
             System.out.println("\nOf which:\n");
@@ -265,3 +263,5 @@ public class ProxyLoader {
         System.out.println("Inserted " + affectedRows + " row(s) into the proxies table.");
     }
 }
+
+*/

@@ -9,24 +9,6 @@ import java.util.concurrent.*;
 
 public class Scraper {
 
-    /*
-        ProxyList proxylist = new ProxyList();
-
-        while(true){
-            proxylist.syncAndRefresh();
-
-            Proxy proxy = proxylist.getNewProxy(0);
-
-            proxy.onSuccess();
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-     */
     public ProxyService proxyService;
     public long conSocketTimeout;
     private int consumerCount;
@@ -46,7 +28,6 @@ public class Scraper {
     public Scraper(int consumerCount, int maxCoroutineCount, int conSocketTimeout) {
 
         this.proxyService = new ProxyService();
-        this.proxyService.syncAndRefresh();
 
         this.consumerCount = consumerCount;
         this.maxCoroutineCount = maxCoroutineCount;

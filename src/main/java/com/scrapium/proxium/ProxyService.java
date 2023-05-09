@@ -8,8 +8,27 @@ import java.sql.*;
 import java.util.*;
 
 public class ProxyService {
+    private Proxy nullProxy;
 
 
+    public ProxyService(){
+        this.nullProxy = new Proxy(
+                -1,
+                "",
+                "",
+                "12345",
+                false,
+                0,
+                new Timestamp(0),
+                "",
+                new Timestamp(0),
+                0,
+                0,
+                new Timestamp(0)
+        );
+    }
+
+    /*
     final private int LIST_SIZE = 10; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
@@ -90,6 +109,7 @@ public class ProxyService {
     }
 
     public Proxy getNewProxy(int depth){
+
 
         //System.out.println("Requested new proxy");
 
@@ -225,6 +245,58 @@ public class ProxyService {
             throw new RuntimeException(e);
         }
     }
+    */
+
+    public Proxy getNullProxy(){
+        return nullProxy;
+    }
+
+    public Proxy getNewProxy() {
+
+        Proxy proxy = null;
+
+        return getNullProxy();
+
+        /*
+        try (Connection connection = DatabaseConnection.getConnection()) {
+
+            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT 1";
+            //String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                proxy = new Proxy(
+                        Integer.parseInt(resultSet.getString("id")),
+                        resultSet.getString("conn_string"),
+                        resultSet.getString("ip_address"),
+                        resultSet.getString("port"),
+                        resultSet.getBoolean("is_socks"),
+                        resultSet.getInt("usage_count"),
+                        resultSet.getTimestamp("next_available"),
+                        resultSet.getString("guest_token"),
+                        resultSet.getTimestamp("guest_token_updated"),
+                        resultSet.getInt("success_delta"),
+                        resultSet.getInt("failed_count"),
+                        resultSet.getTimestamp("last_updated")
+                );
+            }
+
+            resultSet.close();
+            statement.close();
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } */
+
+
+
+    }
+
+
 
 
 }

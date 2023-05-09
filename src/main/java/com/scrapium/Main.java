@@ -1,7 +1,6 @@
 package com.scrapium;
 
 import com.scrapium.proxium.ProxyService;
-import com.scrapium.proxium.loadProxies.ProxyLoader;
 import com.scrapium.tests.Benchmark;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -38,7 +37,7 @@ public class Main {
 
         //Scraper scraper = new Scraper(1, 1, 10);
 
-        Scraper scraper = new Scraper(4, 2000, 10);
+        Scraper scraper = new Scraper(1, 500, 10);
         scraper.scrape();
 
         //ProxyLoader.findProxies();

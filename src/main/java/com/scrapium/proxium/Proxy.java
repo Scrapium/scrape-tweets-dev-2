@@ -6,36 +6,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Proxy {
 
 
+
     private int id = -1;
     private String connString;
     private String ipAddress;
     private String port;
     private boolean isSocks;
-    private volatile AtomicInteger usageCount;
-    private volatile Timestamp nextAvailable;
-    private volatile String guestToken;
-    private volatile Timestamp guestTokenUpdated;
-    private volatile AtomicInteger successDelta;
-    private volatile AtomicInteger failedCount;
+    private int usageCount;
+    private Timestamp nextAvailable;
+    private String guestToken;
+    private Timestamp guestTokenUpdated;
+    private int successDelta;
+    private int failedCount;
+    private Timestamp lastUpdated;
 
 
-
-    private volatile Timestamp lastUpdated; // make it volatile for atomic updates
-
-    public int getOriginalUsageCount() {
-        return originalUsageCount;
-    }
-
-    public void setOriginalUsageCount(int originalUsageCount) {
-        this.originalUsageCount = originalUsageCount;
-    }
-
-    private volatile int originalUsageCount;
-
-    private volatile int originalSuccessDelta;
-    private volatile int originalFailedCount;
-
-
+    private final AtomicInteger usageCountChange;
+    private final AtomicInteger successDeltaChange;
+    private final AtomicInteger failedCountChange;
 
     // Constructor with all parameters
     public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount, Timestamp lastUpdated) {
@@ -44,170 +32,32 @@ public class Proxy {
         this.ipAddress = ipAddress;
         this.port = port;
         this.isSocks = isSocks;
-
-        //this.usageCount = usageCount; // mod
-
-        this.usageCount = new AtomicInteger(0);
-
-        this.nextAvailable = nextAvailable; // update latest
-        this.guestToken = guestToken; // update latest
-        this.guestTokenUpdated = guestTokenUpdated; // update latest
-        //this.successDelta = successDelta;   // mod
-        //this.failedCount = failedCount; // mod
-
-
-
-        this.successDelta = new AtomicInteger(0);
-        this.failedCount = new AtomicInteger(0);
-
-
-        this.originalUsageCount = usageCount;
-        this.originalSuccessDelta = successDelta;
-        this.originalFailedCount = failedCount;
-
-        this.lastUpdated = lastUpdated;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getConnString() {
-        return connString;
-    }
-
-    public void setConnString(String connString) {
-        this.connString = connString;
-    }
-
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public String getHostName(){ return ipAddress; }
-
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
-    public String getPort() {
-        return port;
-    }
-
-    public void setPort(String port) {
-        this.port = port;
-    }
-
-    public boolean isSocks() {
-        return isSocks;
-    }
-
-    public void setSocks(boolean socks) {
-        isSocks = socks;
-    }
-
-    public int getUsageCount() {
-        return usageCount.get();
-    }
-
-    public void incrementUsageCount() {
-        usageCount.incrementAndGet();
-    }
-
-    public void resetUsageCount() {
-        usageCount.set(0);
-    }
-
-    public Timestamp getNextAvailable() {
-        return nextAvailable;
-    }
-
-    public void setNextAvailable(Timestamp nextAvailable) {
+        this.usageCount = usageCount;
         this.nextAvailable = nextAvailable;
-    }
-
-    public String getGuestToken() {
-        return guestToken;
-    }
-
-    public void setGuestToken(String guestToken) {
         this.guestToken = guestToken;
-    }
-
-    public Timestamp getGuestTokenUpdated() {
-        return guestTokenUpdated;
-    }
-
-    public void setGuestTokenUpdated(Timestamp guestTokenUpdated) {
         this.guestTokenUpdated = guestTokenUpdated;
-    }
+        this.successDelta = successDelta;
+        this.failedCount = failedCount;
+        this.lastUpdated = lastUpdated;
 
-    public int getSuccessDelta() {
-        return successDelta.get();
-    }
+        /*
 
-    public void incrementSuccessDelta(){
-        this.successDelta.incrementAndGet();
-    }
+            Live Updated values:
 
-    public void resetSuccessDelta(){
-        this.successDelta.set(0);
-    }
+            - usageCount *
 
-    public int getFailedCount() {
-        return failedCount.get();
-    }
+            - nextAvailable
+            - guestToken
+            - guestTokenUpdated
 
-    public void incrementFailedCount() {
-        this.failedCount.incrementAndGet();
-    }
+            - successDelta *
+            - failedCount *
 
-    public void resetFailedCount() {
-        this.failedCount.set(0);
-    }
+        */
 
-    public int getOriginalSuccessDelta() {
-        return originalSuccessDelta;
-    }
-
-    public void setOriginalSuccessDelta(int originalSuccessDelta) {
-        this.originalSuccessDelta = originalSuccessDelta;
-    }
-
-    public int getOriginalFailedCount() {
-        return originalFailedCount;
-    }
-
-    public void setOriginalFailedCount(int originalFailedCount) {
-        this.originalFailedCount = originalFailedCount;
-    }
-
-    public Timestamp getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(Timestamp lastUpdated) {
-        if(lastUpdated.after(this.lastUpdated)){
-            this.lastUpdated = lastUpdated;
-        }
-    }
-
-
-    public void onSuccess(){
-        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
-        this.usageCount.incrementAndGet();
-        this.successDelta.incrementAndGet();
-    }
-
-    public void onFailure(){
-        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
-        this.usageCount.incrementAndGet();
-        this.successDelta.decrementAndGet();
-        this.failedCount.incrementAndGet();
+        this.usageCountChange = new AtomicInteger(0);
+        this.successDeltaChange = new AtomicInteger(0);
+        this.failedCountChange = new AtomicInteger(0);
     }
 
     @Override
@@ -226,4 +76,44 @@ public class Proxy {
                 ", failedCount=" + failedCount +
                 '}';
     }
+
+
+
+    public String getHostName() {
+        return this.ipAddress;
+    }
+
+    public int getPort() {
+        return Integer.parseInt(this.port);
+    }
+
+    public void onSuccess(){
+        //System.out.println("Proxy win");
+        this.usageCountChange.incrementAndGet();
+        this.successDeltaChange.incrementAndGet();
+        this.onProxyModified();
+    }
+    public void onFailure() {
+        //System.out.println("Proxy loss");
+        this.usageCountChange.incrementAndGet();
+        this.successDeltaChange.decrementAndGet();
+        this.failedCountChange.incrementAndGet();
+        this.onProxyModified();
+    }
+
+    public void onProxyModified(){
+        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
+    }
+
+    private void setLastUpdated(Timestamp timestamp) {
+        // TODO: Update the last updated time in a synchronized way using atomic long
+    }
+
+    public int getRealUsageCount(){ return this.usageCount + this.usageCountChange.get(); }
+    public int getSuccessDelta(){ return this.successDelta + this.successDeltaChange.get(); }
+    public int getRealFailedCount(){ return this.failedCount + this.failedCountChange.get(); }
+
+
+
+
 }

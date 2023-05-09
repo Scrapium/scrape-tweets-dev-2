@@ -37,9 +37,12 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
     @Override
     protected void start(HttpResponse response, ContentType contentType) throws HttpException, IOException {
 
+        //System.out.println(response.getCode());
+
         if(response.getCode() == 200){
             this.proxy.onSuccess();
             scraper.logger.increaseSuccessRequestCount();
+        } else {
         }
 
     }
@@ -69,7 +72,12 @@ public class TweetThreadRequestConsumer extends AbstractCharResponseConsumer<Voi
 
     @Override
     public void failed(Exception cause) {
+
+
+       // cause.printStackTrace();
+
         scraper.logger.increaseFailedRequestCount();
+
         this.proxy.onFailure();
     }
 

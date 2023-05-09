@@ -148,8 +148,9 @@ public class TweetThreadTaskProcessor {
     public void processNextTask() {
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
+
         try {
-            Proxy proxy = scraper.proxyService.getNewProxy(0);
+            Proxy proxy = scraper.proxyService.getNewProxy();
             TweetThreadRequestConsumer consumer = new TweetThreadRequestConsumer(this, proxy, coroutineCount, scraper);
             this.consumerQueue.add(consumer);
 
@@ -157,7 +158,7 @@ public class TweetThreadTaskProcessor {
 
             TweetTask task = this.taskQueue.take();
 
-            final HttpHost httpProxy = new HttpHost("http", proxy.getHostName(), Integer.valueOf(proxy.getPort()));
+            //final HttpHost httpProxy = new HttpHost("http", proxy.getHostName(), Integer.valueOf(proxy.getPort()));
 
             CloseableHttpAsyncClient client = clients.computeIfAbsent(proxy, p -> {
                 CloseableHttpAsyncClient newClient = HttpAsyncClients.custom()
@@ -165,14 +166,14 @@ public class TweetThreadTaskProcessor {
                         .setDefaultRequestConfig(config)
                         .setConnectionManager(connectionManagerBuilder)
                         .disableAutomaticRetries()
-                        .setProxy(httpProxy)
+                       // .setProxy(httpProxy)
                         .build();
                 newClient.start();
                 return newClient;
             });
 
             final BasicHttpRequest request = BasicRequestBuilder.get()
-                    .setHttpHost(new HttpHost("example.com"))
+                    .setHttpHost(new HttpHost("conpiler.io"))
                     .setPath("/")
                     .build();
 
