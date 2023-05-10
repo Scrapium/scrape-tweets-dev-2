@@ -7,12 +7,26 @@ import com.scrapium.utils.TimeUtils;
 import java.sql.*;
 import java.util.*;
 
+
+// TODO:
+// TODO:
+// TODO:
+// TODO:
+// TODO:
+// TODO:     Update sync so that it modifies pre-existing data for multi-instance environments.
+// TODO:     Requires updating getNewProxy function too
+// TODO:        - remove Mod values.
+// TODO:
+// TODO:
+// TODO:
+// TODO:
+
+
+
 public class ProxyService {
-    private Proxy nullProxy;
 
-
-    public ProxyService(){
-        this.nullProxy = new Proxy(
+    public static Proxy getNullProxy(){
+        return new Proxy(
                 -1,
                 "",
                 "",
@@ -28,28 +42,164 @@ public class ProxyService {
         );
     }
 
-    /*
-    final private int LIST_SIZE = 10; // proxy size to reload into memory
+
+    final private int LIST_SIZE = 50; // proxy size to reload into memory
     ArrayList<Proxy> proxyList;
 
     public ProxyService() {
-
         this.proxyList = new ArrayList<Proxy>();
     }
 
     public void syncAndRefresh() {
-        sync();
-        refresh();
+        do_sync();
     }
 
+
+
+    /*
+
+            Live Updated values:
+
+            - usageCount *
+
+            - nextAvailable
+
+            - guestToken
+            - guestTokenUpdated
+
+            - successDelta *
+            - failedCount *
+
+    */
+
+
+
+    private void do_sync(){
+
+
+
+        ArrayList<Proxy> proxyListClone = (ArrayList<Proxy>) this.proxyList.clone();
+
+        this.proxyList = this.grab_proxy_list();
+
+        Iterator<Proxy> iterator = proxyListClone.iterator();
+
+        try (Connection connection = DatabaseConnection.getConnection()) {
+
+            List<Integer> updatedIDs = new ArrayList<>();
+
+            // Loop through the elements using the iterator
+            while (iterator.hasNext()) {
+
+                Proxy cachedProxy = iterator.next();
+
+                try {
+
+                    //System.out.println("Updating proxy = " + cachedProxy.getID());
+
+                    String updateSql = "UPDATE proxies SET usage_count=?, next_available=?, success_delta=?, failed_count=?, last_updated=? WHERE id=?";
+
+                    PreparedStatement statement = connection.prepareStatement(updateSql);
+
+                    //System.out.println(cachedProxy.getID());
+                   // System.out.println(cachedProxy.getRealSuccessDelta());
+
+                    statement.setInt(1, cachedProxy.getRealUsageCount()); // set the new usage_count
+                    statement.setTimestamp(2, cachedProxy.getNextAvailable()); // set the new usage_count
+                    statement.setInt(3, cachedProxy.getRealSuccessDelta()); // set the new success_delta
+                    statement.setInt(4, cachedProxy.getRealFailedCount()); // set the new failed_count
+                    statement.setTimestamp(5, cachedProxy.getLastUpdated()); // set the new failed_count
+                    statement.setInt(6, cachedProxy.getID()); // set the id of the proxy to update
+
+                    updatedIDs.add(cachedProxy.getID());
+
+                    int rowsAffected = statement.executeUpdate();
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+
+            }
+
+            //System.out.println("Updated IDS: " + updatedIDs.toString());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public Proxy getNewProxy(int depth){
+
+        // add check for if no proxies are available.
+
+        Random random = new Random();
+
+        if(this.proxyList.size() == 0){
+            try {
+                System.out.println("WARNING: Proxy cache is empty, no proxies available!");
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+            return getNewProxy(depth + 1);
+        }
+
+        Collections.sort(proxyList, new Comparator<Proxy>() {
+            @Override
+            public int compare(Proxy p1, Proxy p2) {
+                return p1.getRealSuccessDelta() - p2.getRealSuccessDelta();
+            }
+        });
+
+        int topSize = 1;
+
+        if(this.proxyList.size() > LIST_SIZE){
+            topSize = LIST_SIZE;
+        } else {
+            topSize = this.proxyList.size();
+        }
+
+
+        int randomIndex = random.nextInt(LIST_SIZE);
+        Proxy proxy = this.proxyList.get(randomIndex);
+
+        //System.out.println(proxy.getID());
+
+        //System.out.println("Proxy chosen, " + randomIndex + "/" + this.proxyList.size() );
+
+
+        if(proxy.getRealFailedCount() > 50){
+            ///proxy.resetUsageCountMod();
+            proxy.resetFailedCountMod();
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(5));
+            //System.out.println("proxy failed exceed: setting next available.");
+            return getNewProxy(depth + 1);
+        }
+
+
+
+        if(proxy.getRealUsageCount() >= 800){
+            proxy.resetUsageCountMod();
+            proxy.resetFailedCountMod();
+            proxy.setNextAvailable(TimeUtils.nowPlusMinutes(4));
+            //System.out.println("proxy usage exceed: setting next available.");
+            return getNewProxy(depth + 1);
+        }
+
+        return proxy;
+    }
+
+    /*
     // use synchronized (list) across threads.
     private void sync() {
 
         // Create an iterator for the ArrayList
 
         ArrayList<Proxy> proxyListClone = (ArrayList<Proxy>) this.proxyList.clone();
-
-        refresh();
 
         Iterator<Proxy> iterator = proxyListClone.iterator();
 
@@ -202,22 +352,21 @@ public class ProxyService {
         }
         return null;
     }
+    */
 
-    private void refresh() {
+    private ArrayList<Proxy> grab_proxy_list() {
 
-        // reset the proxy list to empty
-
-        this.proxyList = new ArrayList<Proxy>();
+        ArrayList<Proxy> newProxyList = new ArrayList<Proxy>();
 
         try (Connection connection = DatabaseConnection.getConnection()) {
 
-            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
-            //String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
+            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC";// + LIST_SIZE;
 
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
+
                 Proxy proxy = new Proxy(
                         Integer.parseInt(resultSet.getString("id")),
                         resultSet.getString("conn_string"),
@@ -233,68 +382,22 @@ public class ProxyService {
                         resultSet.getTimestamp("last_updated")
                 );
 
-                proxyList.add(proxy);
+                //System.out.println("Loaded new proxy from public.proxies ID = " + proxy.getID());
+
+                newProxyList.add(proxy);
             }
 
             resultSet.close();
             statement.close();
 
+            return newProxyList;
 
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
-    */
 
-    public Proxy getNullProxy(){
-        return nullProxy;
-    }
-
-    public Proxy getNewProxy() {
-
-        Proxy proxy = null;
-
-        return getNullProxy();
-
-        /*
-        try (Connection connection = DatabaseConnection.getConnection()) {
-
-            String query = "SELECT * FROM public.proxies as proxies WHERE next_available <= NOW() AND is_socks = false ORDER BY success_delta DESC LIMIT 1";
-            //String query = "SELECT * FROM public.proxies as proxies WHERE is_socks = false ORDER BY success_delta DESC LIMIT " + LIST_SIZE;
-
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                proxy = new Proxy(
-                        Integer.parseInt(resultSet.getString("id")),
-                        resultSet.getString("conn_string"),
-                        resultSet.getString("ip_address"),
-                        resultSet.getString("port"),
-                        resultSet.getBoolean("is_socks"),
-                        resultSet.getInt("usage_count"),
-                        resultSet.getTimestamp("next_available"),
-                        resultSet.getString("guest_token"),
-                        resultSet.getTimestamp("guest_token_updated"),
-                        resultSet.getInt("success_delta"),
-                        resultSet.getInt("failed_count"),
-                        resultSet.getTimestamp("last_updated")
-                );
-            }
-
-            resultSet.close();
-            statement.close();
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } */
-
-
-
-    }
 
 
 

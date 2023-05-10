@@ -15,6 +15,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,22 +48,28 @@ public class TweetThreadTaskProcessor {
         AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder().build();
         this.c = asyncHttpClient(config);
 
+
+
     }
 
     /*
         Run Continuously
      */
-    public void processNextTask() {
+    public void processNextTask(){
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-        ProxyServer proxy1 = new ProxyServer.Builder("proxy1.example.com", 8080).build();
+        Proxy proxy = this.scraper.proxyService.getNewProxy(0);
+
+
 
         Request request1 = new RequestBuilder("GET")
-                .setUrl("http://example.com/")
-                //.setProxyServer(proxy1)
+                .setUrl("http://httpforever.com/")
+                .setProxyServer(new ProxyServer.Builder(proxy.getIpAddress(), proxy.getPort()).build())
+                .setReadTimeout(Duration.ofMillis(5000))
+                .setRequestTimeout(Duration.ofMillis(15000))
                 .build();
 
-            c.executeRequest(request1, new handler(c, this));
+            c.executeRequest(request1, new handler(c, proxy, this));
 
     }
 
@@ -73,5 +80,11 @@ public class TweetThreadTaskProcessor {
     public LoggingThread getLogger(){
         return this.scraper.logger;
     }
+
+    public int getCoroutineCount() { return this.coroutineCount.get(); }
+
+    public void incrementCoroutineCount() { this.coroutineCount.incrementAndGet(); }
+    public void decrementCoroutineCount() { this.coroutineCount.decrementAndGet(); }
+
 
 }

@@ -1,11 +1,3 @@
-
-/*
-
-        MOVED TO PYTHON SCRIPT
-
-*/
-
-/*
 package com.scrapium.proxium.loadProxies;
 
 import com.scrapium.DatabaseConnection;
@@ -41,17 +33,11 @@ public class ProxyLoader {
         System.out.println("Proxies have been put in ./unchecked_proxies.txt");
         System.out.println("Put the resulting file output in ./checked_proxies.txt\n\n");
 
-        Scanner userInput = new Scanner(System.in);
-        String input = userInput.nextLine();
-
         System.out.println("Starting...");
         ProxyLoader.loadProxies();
     }
 
     public static void findProxies() {
-
-
-
 
         String filePath = "proxy_list.xml"; // Replace with the path to your XML file
 
@@ -76,20 +62,6 @@ public class ProxyLoader {
                 http_proxies.addAll(proxy_list);
                 System.out.println("https: (" + proxy_list.size() + ") " + entry + ".");
             }
-
-
-
-            //for(String entry: sock4_links){
-           //     ArrayList<String> proxy_list = getProxies(entry);
-            //    sock4_proxies.addAll(proxy_list);
-       //         System.out.println("Sock 4: (" + proxy_list.size() + ") " + entry + ".");
-     //       }
-
-     //       for(String entry: sock5_links){
-      //          ArrayList<String> proxy_list = getProxies(entry);
-      //          sock5_proxies.addAll(proxy_list);
-     //           System.out.println("Sock 5: (" + proxy_list.size() + ") " + entry + ".");
-     //       }
 
             System.out.println("===\nTotal Proxies: " + (http_proxies.size() + sock4_proxies.size() + sock5_proxies.size()));
             System.out.println("\nOf which:\n");
@@ -162,7 +134,8 @@ public class ProxyLoader {
 
 
     public static void checkProxies() {
-        // .\proxy_checker\mubeng_0.14.0_windows_amd64.exe -f unchecked_proxies.txt --check --output checked_proxies.txt
+        System.out.println("CheckProxies is not implemented");
+        System.exit(0);
     }
 
     public static void loadProxies() {
@@ -218,15 +191,7 @@ public class ProxyLoader {
         } catch (IOException e) {
             System.err.format("IOException: %s%n", e);
         }
-
-
     }
-
-
-
-
-
-
 
 
     // ex. example input = http://146.59.147.70:8888
@@ -250,7 +215,7 @@ public class ProxyLoader {
 
         preparedStatement.setString(1, proxy.getConnString());
         preparedStatement.setString(2, proxy.getIpAddress());
-        preparedStatement.setString(3, proxy.getPort());
+        preparedStatement.setString(3, String.valueOf(proxy.getPort()));
         preparedStatement.setBoolean(4, proxy.isSocks()); // Set is_socks value
         preparedStatement.setInt(5, 0); // Set usage_count value
         preparedStatement.setTimestamp(6, new Timestamp(0L)); // Set next_available to the lowest possible value
@@ -263,5 +228,3 @@ public class ProxyLoader {
         System.out.println("Inserted " + affectedRows + " row(s) into the proxies table.");
     }
 }
-
-*/

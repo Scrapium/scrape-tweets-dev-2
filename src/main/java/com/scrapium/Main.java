@@ -37,8 +37,11 @@ public class Main {
 
         //Scraper scraper = new Scraper(1, 1, 10);
 
+        // settings for .env
+        // t3.xlarge - 6/1000
 
-        Scraper scraper = new Scraper(5, 1000, 10);
+
+        Scraper scraper = new Scraper(6, 5000, 10);
         scraper.scrape();
 
         //ProxyLoader.findProxies();

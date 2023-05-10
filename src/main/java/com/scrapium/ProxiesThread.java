@@ -20,10 +20,17 @@ public class ProxiesThread  extends ThreadBase implements Runnable {
     @Override
     public void run() {
         while (this.running) {
-            //this.proxyService.syncAndRefresh();
-            //System.out.println("Synced proxies");
             try {
-                Thread.sleep(1000);
+                this.proxyService.syncAndRefresh();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            System.out.println(
+                    "Running syncandUpdate"
+            );
+            try {
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
