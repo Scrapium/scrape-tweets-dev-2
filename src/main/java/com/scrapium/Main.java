@@ -41,7 +41,7 @@ public class Main {
         // t3.xlarge - 6/1000
 
 
-        Scraper scraper = new Scraper(6, 5000, 10);
+        Scraper scraper = new Scraper(1, 2000, 10);
         scraper.scrape();
 
         //ProxyLoader.findProxies();

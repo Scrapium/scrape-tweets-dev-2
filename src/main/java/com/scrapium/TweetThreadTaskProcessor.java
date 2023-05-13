@@ -45,8 +45,15 @@ public class TweetThreadTaskProcessor {
         this.coroutineCount = coroutineCount;
         this.tweetThreadRunning = running;
 
-        AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder().build();
+        AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
+                .setConnectTimeout(5000)
+                .setRequestTimeout(5000)
+                .setReadTimeout(5000)
+                .setMaxConnections(10000)
+                .build();
         this.c = asyncHttpClient(config);
+
+
 
 
 
@@ -60,16 +67,13 @@ public class TweetThreadTaskProcessor {
 
         Proxy proxy = this.scraper.proxyService.getNewProxy(0);
 
-
-
         Request request1 = new RequestBuilder("GET")
                 .setUrl("http://httpforever.com/")
                 .setProxyServer(new ProxyServer.Builder(proxy.getIpAddress(), proxy.getPort()).build())
-                .setReadTimeout(Duration.ofMillis(5000))
-                .setRequestTimeout(Duration.ofMillis(15000))
                 .build();
 
-            c.executeRequest(request1, new handler(c, proxy, this));
+        c.executeRequest(request1, new handler(c, proxy, this));
+
 
     }
 

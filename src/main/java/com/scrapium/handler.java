@@ -46,7 +46,6 @@ public class handler implements AsyncHandler<Integer> {
         }
         @Override
         public Integer onCompleted() throws Exception {
-
             this.processor.decrementCoroutineCount();
             proxy.onSuccess();
             //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
@@ -57,9 +56,11 @@ public class handler implements AsyncHandler<Integer> {
         public void onThrowable(Throwable t) {
             proxy.onFailure();
             // Handle exceptions here
+          //  t.printStackTrace();
             this.processor.getScraper().logger.increaseFailedRequestCount();
             this.processor.decrementCoroutineCount();
             //System.err.println("An error occurred: " + t.getMessage());
         }
+
 
 }
