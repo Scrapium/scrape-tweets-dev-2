@@ -149,11 +149,15 @@ public class ProxyLoader {
                     // ex. _proxy_entry = http://146.59.147.70:8888
 
                     String proxy_entry = _proxy_entry.replaceAll("[\\r\\n]+", "");
-
                     String connString = proxy_entry;
-                    String ip = extractWithPattern(proxy_entry, "(?:\\d{1,3}\\.){3}\\d{1,3}");
-                    String port = extractWithPattern(proxy_entry, "(?<=:)(\\d+)");
 
+
+                    /*
+                    String connString = proxy_entry;
+                    String ip = extractWithPattern(proxy_entry, "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
+                    int port = Integer.valueOf(extractWithPattern(proxy_entry, "(?<=:)(\\d+)"));
+
+                    System.out.println(ip);
 
                     boolean is_socks = Pattern.compile("(?i)socks").matcher(proxy_entry).find();
 
@@ -164,13 +168,24 @@ public class ProxyLoader {
                             port,
                             is_socks,
                             0,
+                            0,
                             new Timestamp(0L),
                             "",
                             new Timestamp(0L),
                             0,
                             0,
                             new Timestamp(0L)
+                    ); */
+                    Proxy proxy = new Proxy(
+                        -1,
+                            connString,
+                        0,
+                        0,
+                        0,
+                        0,
+                            new Timestamp(System.currentTimeMillis())
                     );
+
 
                     try {
                         addProxyEntry(connection, proxy);
@@ -206,23 +221,16 @@ public class ProxyLoader {
     }
 
 
-
-
-
     private static void addProxyEntry(Connection connection, Proxy proxy) throws SQLException {
-        String insertSQL = "INSERT INTO proxies (conn_string, ip_address, port, is_socks, usage_count, next_available, guest_token, guest_token_updated, success_delta, failed_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String insertSQL = "INSERT INTO test_proxy (connection_string, usage_count, success_count, failed_count, fail_streak, cooldown_until) VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertSQL);
 
-        preparedStatement.setString(1, proxy.getConnString());
-        preparedStatement.setString(2, proxy.getIpAddress());
-        preparedStatement.setString(3, String.valueOf(proxy.getPort()));
-        preparedStatement.setBoolean(4, proxy.isSocks()); // Set is_socks value
-        preparedStatement.setInt(5, 0); // Set usage_count value
-        preparedStatement.setTimestamp(6, new Timestamp(0L)); // Set next_available to the lowest possible value
-        preparedStatement.setString(7, "");
-        preparedStatement.setTimestamp(8, new Timestamp(0L)); // Set guest_token_updated to the lowest possible value
-        preparedStatement.setInt(9, 0); // Set success_delta value
-        preparedStatement.setInt(10, 0); // Set failed_count value
+        preparedStatement.setString(1, proxy.getConnectionString()); // Set connection_string value
+        preparedStatement.setInt(2, 0); // Set usage_count value
+        preparedStatement.setInt(3, 0); // Set success_count value
+        preparedStatement.setInt(4, 0); // Set failed_count value
+        preparedStatement.setInt(5, 0); // Set fail_streak value
+        preparedStatement.setTimestamp(6, null); // Set cooldown_until value (null as an example)
 
         int affectedRows = preparedStatement.executeUpdate();
         System.out.println("Inserted " + affectedRows + " row(s) into the proxies table.");

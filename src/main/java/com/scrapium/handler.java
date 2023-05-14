@@ -22,8 +22,9 @@ public class handler implements AsyncHandler<Integer> {
     @Override
         public AsyncHandler.State onStatusReceived(HttpResponseStatus responseStatus) throws Exception {
             status = responseStatus.getStatusCode();
-            if(status >= 200 && status < 400){
+            if(status >= 200 && status < 300){
                 this.processor.getScraper().logger.increaseSuccessRequestCount();
+                proxy.onSuccess();
             } else {
                 this.processor.getScraper().logger.increaseFailedRequestCount();
                 proxy.onFailure();
@@ -47,7 +48,7 @@ public class handler implements AsyncHandler<Integer> {
         @Override
         public Integer onCompleted() throws Exception {
             this.processor.decrementCoroutineCount();
-            proxy.onSuccess();
+
             //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
             return 200;
         }
@@ -56,7 +57,6 @@ public class handler implements AsyncHandler<Integer> {
         public void onThrowable(Throwable t) {
             proxy.onFailure();
             // Handle exceptions here
-          //  t.printStackTrace();
             this.processor.getScraper().logger.increaseFailedRequestCount();
             this.processor.decrementCoroutineCount();
             //System.err.println("An error occurred: " + t.getMessage());

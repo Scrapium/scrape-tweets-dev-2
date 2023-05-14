@@ -55,7 +55,7 @@ public class LoggingThread extends ThreadBase implements Runnable {
 
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);

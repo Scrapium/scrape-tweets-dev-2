@@ -8,15 +8,6 @@ import org.asynchttpclient.proxy.ProxyServer;
 import static org.asynchttpclient.Dsl.*;
 
 
-import javax.net.ssl.*;
-import java.io.IOException;
-import java.nio.charset.CodingErrorAction;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
-import java.time.Duration;
-import java.util.Iterator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,10 +44,6 @@ public class TweetThreadTaskProcessor {
                 .build();
         this.c = asyncHttpClient(config);
 
-
-
-
-
     }
 
     /*
@@ -65,14 +52,22 @@ public class TweetThreadTaskProcessor {
     public void processNextTask(){
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-        Proxy proxy = this.scraper.proxyService.getNewProxy(0);
 
-        Request request1 = new RequestBuilder("GET")
-                .setUrl("http://httpforever.com/")
-                .setProxyServer(new ProxyServer.Builder(proxy.getIpAddress(), proxy.getPort()).build())
-                .build();
+        Proxy proxy = this.scraper.proxyService.getNewProxy();
 
-        c.executeRequest(request1, new handler(c, proxy, this));
+        if(proxy != null){
+
+            //System.out.print(" " + proxy.getID() + ", ");
+
+            Request request1 = new RequestBuilder("GET")
+                    .setUrl("http://httpforever.com/")
+                    .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
+                    .build();
+
+
+            c.executeRequest(request1, new handler(c, proxy, this));
+        }
+
 
 
     }

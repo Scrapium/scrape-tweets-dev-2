@@ -26,11 +26,8 @@ public class ProxiesThread  extends ThreadBase implements Runnable {
                 e.printStackTrace();
             }
 
-            System.out.println(
-                    "Running syncandUpdate"
-            );
             try {
-                Thread.sleep(500);
+                Thread.sleep(4000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

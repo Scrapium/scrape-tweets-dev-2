@@ -1,164 +1,102 @@
 package com.scrapium.proxium;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Proxy {
 
-
-    private int id = -1;
-    private String connString;
-    private String ipAddress;
-    private String port;
-    private boolean isSocks;
-    private int usageCount;
-    private Timestamp nextAvailable;
-    private String guestToken;
-    private Timestamp guestTokenUpdated;
-    private int successDelta;
-    private int failedCount;
-    private Timestamp lastUpdated;
+    private int id;
+    private String connectionString;
+    private AtomicInteger usageCount;
+    private AtomicInteger successCount;
+    private AtomicInteger failedCount;
+    private AtomicInteger failStreak;
+    private AtomicLong cooldownUntil;
 
 
-    private final AtomicInteger usageCountMod;
-    private AtomicLong nextAvailableMod;
-    private final AtomicInteger successDeltaMod;
-    private final AtomicInteger failedCountMod;
-
-    private AtomicLong lastUpdatedMod;
-
-
-    // Constructor with all parameters
-    public Proxy(int id, String connString, String ipAddress, String port, boolean isSocks, int usageCount, Timestamp nextAvailable, String guestToken, Timestamp guestTokenUpdated, int successDelta, int failedCount, Timestamp lastUpdated) {
+    public Proxy(int id, String connectionString, int _usageCount, int _successCount, int _failedCount, int _failStreak, Timestamp _cooldownUntil) {
         this.id = id;
-        this.connString = connString;
-        this.ipAddress = ipAddress;
-        this.port = port;
-        this.isSocks = isSocks;
-        this.usageCount = usageCount;
-        this.nextAvailable = nextAvailable;
-        this.guestToken = guestToken;
-        this.guestTokenUpdated = guestTokenUpdated;
-        this.successDelta = successDelta;
-        this.failedCount = failedCount;
-        this.lastUpdated = lastUpdated;
+        this.connectionString = connectionString;
+        this.usageCount = new AtomicInteger(_usageCount);
+        this.successCount = new AtomicInteger(_successCount);
+        this.failedCount = new AtomicInteger(_failedCount);
+        this.failStreak = new AtomicInteger(_failStreak);
 
-        /*
+        long coolUntil = ( _cooldownUntil == null ) ? System.currentTimeMillis() : _cooldownUntil.getTime();
 
-            Live Updated values:
+        this.cooldownUntil = new AtomicLong(coolUntil);
 
-            - usageCount * v
-
-            - nextAvailable
-
-            - guestToken
-            - guestTokenUpdated
-
-            - successDelta * v
-            - failedCount * v
-            
-            - last updated
-
-        */
-
-
-        this.usageCountMod = new AtomicInteger(0);
-        this.nextAvailableMod = new AtomicLong(lastUpdated.getTime());
-
-        // guestToken, guestTokenUpdated
-
-        this.successDeltaMod = new AtomicInteger(0);
-        this.failedCountMod = new AtomicInteger(0);
-
-        this.lastUpdatedMod = new AtomicLong(lastUpdated.getTime());
     }
-
-    @Override
-    public String toString() {
-        return "Proxy{" +
-                "id=" + id +
-                ", connString='" + connString + '\'' +
-                ", ipAddress='" + ipAddress + '\'' +
-                ", port='" + port + '\'' +
-                ", isSocks=" + isSocks +
-                ", usageCount=" + usageCount +
-                ", nextAvailable=" + nextAvailable +
-                ", guestToken='" + guestToken + '\'' +
-                ", guestTokenUpdated=" + guestTokenUpdated +
-                ", successDelta=" + successDelta +
-                ", failedCount=" + failedCount +
-                '}';
-    }
-
-    public String getHostName() {
-        return this.ipAddress;
-    }
-    public String getIpAddress() { return this.ipAddress; }
-    public int getPort() {
-        return Integer.parseInt(this.port);
-    }
-
-    public String getConnString() { return this.connString; }
 
     public void onSuccess(){
-        //System.out.println("Proxy win");
-        this.usageCountMod.incrementAndGet();
-        this.successDeltaMod.incrementAndGet();
-        this.onProxyModified();
+        this.usageCount.incrementAndGet();
+        this.successCount.incrementAndGet();
+        this.failStreak.set(0);
+        this.cooldownUntil.set(System.currentTimeMillis());
     }
+
     public void onFailure() {
-        //System.out.println("Proxy loss");
-        this.usageCountMod.incrementAndGet();
-        this.successDeltaMod.decrementAndGet();
-        this.failedCountMod.incrementAndGet();
-        this.onProxyModified();
+        this.usageCount.incrementAndGet();
+        this.failedCount.incrementAndGet();
+        this.failStreak.incrementAndGet();
+
+        int baseCooldownTime = 1000;
+        double exponentialFactor = 1.01;
+        long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 1);
+
+        //System.out.println("back off time = " + (cooldownTime / 1000));
+
+        // Set the cooldown time
+        this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
+        // TODO: check new cooldownuntil time is not more than 1 hour
+        //System.out.println(new Timestamp(this.cooldownUntil.get()));
     }
 
-    public void onProxyModified(){
-        this.setLastUpdated(new Timestamp(System.currentTimeMillis()));
+    public String getConnectionString(){
+        return this.connectionString;
+    }
+    public String getIP() {
+        return extractWithPattern(this.connectionString, "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})");
+    }
+    public int getPort() {
+        return Integer.valueOf(extractWithPattern(this.connectionString, "(?<=:)(\\d+)"));
     }
 
-    public int getRealUsageCount(){ return this.usageCount + this.usageCountMod.get(); }
-    public int getRealSuccessDelta(){ return this.successDelta + this.successDeltaMod.get(); }
-    public int getRealFailedCount(){ return this.failedCount + this.failedCountMod.get(); }
-
-    // increment setters
-    public void incrementUsageCountMod(){ this.usageCountMod.incrementAndGet(); }
-    public void incrementSuccessDeltaMod(){ this.successDeltaMod.incrementAndGet(); }
-    public void incrementFailedCountMod(){ this.failedCountMod.incrementAndGet(); }
-
-    // decrement setters
-    public void decrementUsageCountMod() { this.usageCountMod.decrementAndGet(); }
-    public void decrementSuccessDeltaMod() { this.successDeltaMod.decrementAndGet(); }
-    public void decrementFailedCountMod() { this.failedCountMod.decrementAndGet(); }
-
-    public void resetUsageCountMod(){ this.usageCountMod.set(0);}
-    public void resetSuccessDeltaMod(){ this.successDeltaMod.set(0);}
-    public void resetFailedCountMod(){ this.failedCountMod.set(0);}
-
-    public void setLastUpdated(Timestamp ts ){
-        if(ts.getTime() > this.lastUpdatedMod.get()){
-            this.lastUpdatedMod.set(ts.getTime());
+    public static String extractWithPattern(String input, String pattern) {
+        Pattern compiledPattern = Pattern.compile(pattern);
+        Matcher matcher = compiledPattern.matcher(input);
+        if (matcher.find()) {
+            return matcher.group();
         }
+        return "";
     }
-    public Timestamp getLastUpdated(){ return new Timestamp(this.lastUpdatedMod.get());}
 
-    //
-    public void setNextAvailable(Timestamp ts ){
-        System.out.println("Setting proxy to " + ts);
 
-        if(ts.getTime() > this.nextAvailableMod.get()) {
-            this.nextAvailableMod.set(ts.getTime());
-        }
+    public int getUsageCount() {
+        return this.usageCount.get();
     }
-    public Timestamp getNextAvailable(){ return new Timestamp(this.nextAvailableMod.get());}
 
+    public int getSuccessCount() {
+        return this.successCount.get();
+    }
 
-    public int getID(){  return this.id; }
+    public int getFailedCount() {
+        return this.failedCount.get();
+    }
 
+    public int getFailStreak() {
+        return this.failStreak.get();
+    }
 
-    public boolean isSocks() {
-        return this.isSocks;
+    public Timestamp getCooldownUntil() {
+        return new Timestamp(this.cooldownUntil.get());
+    }
+
+    public int getID() {
+        return this.id;
     }
 }
