@@ -8,6 +8,19 @@ import java.util.concurrent.*;
 
 public class ProxyService {
 
+
+    /*
+
+    UPDATE test_proxy
+        SET usage_count = 0,
+        success_count = 0,
+        failed_count = 0,
+        fail_streak = 0,
+        cooldown_until = NULL,
+        last_used = NULL;
+
+     */
+
     private ArrayList<Proxy> proxies;
 
     public ProxyService (){
@@ -19,8 +32,8 @@ public class ProxyService {
         String query = "SELECT id, connection_string, usage_count, success_count, failed_count, fail_streak, cooldown_until " +
                 "FROM test_proxy " +
                 "WHERE (cooldown_until IS NULL OR NOW() > cooldown_until) " +
-                "ORDER BY CASE WHEN usage_count = 0 THEN 1 ELSE success_count / usage_count END DESC, last_used ASC " +
-                "LIMIT 50";
+                "ORDER BY CASE WHEN usage_count = 0 THEN 1 ELSE success_count / usage_count END DESC" +
+                "LIMIT 150";
 
         List<Proxy> fetchedProxies = new ArrayList<>();
 
@@ -38,6 +51,8 @@ public class ProxyService {
                         resultSet.getTimestamp("cooldown_until")
                 ));
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         if(fetchedProxies.size() == 0){
@@ -53,8 +68,9 @@ public class ProxyService {
     private void syncProxiesWithDB() throws SQLException {
         String query = "UPDATE test_proxy SET usage_count = ?, success_count = ?, failed_count = ?, fail_streak = ?, cooldown_until = ?, last_used = ? WHERE id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+        try (Connection connection = DatabaseConnection.getConnection()){
+
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
 
             synchronized (proxies) {
                 for (Proxy proxy : proxies) {
@@ -65,13 +81,21 @@ public class ProxyService {
                     preparedStatement.setTimestamp(5, proxy.getCooldownUntil());
                     preparedStatement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
                     preparedStatement.setInt(7, proxy.getID());
-                    preparedStatement.addBatch(); // Add the statement to the batch
+                    preparedStatement.addBatch();
                 }
             }
 
+
+
             int[] affectedRows = preparedStatement.executeBatch(); // Execute the batch
-            //System.out.println("Updated " + affectedRows.length + " row(s) in the proxies table.");
+            System.out.println("Updated " + affectedRows.length + " row(s) in the proxies table.");
+
+            refreshProxies();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
     }
 
     public Proxy getNewProxy() {
@@ -80,15 +104,28 @@ public class ProxyService {
                 return null;
             }
 
-            Random random = new Random();
-            int randomIndex = random.nextInt(proxies.size());
-            return proxies.get(randomIndex);
+            Proxy proxy = null;
+
+            while(
+                    proxy == null ||
+                    proxy.getCooldownUntil().after(new Timestamp(System.currentTimeMillis()))
+            ){
+
+
+                Random random = new Random();
+                int randomIndex = random.nextInt(proxies.size());
+                proxy = proxies.get(randomIndex);
+
+            }
+
+
+            return proxy;
         }
     }
 
     public void syncAndRefresh() throws SQLException {
-        //System.out.println("> ran syncAndRefresh (proxy list length = " + proxies.size() + ")");
+        System.out.println("> ran syncAndRefresh (proxy list length = " + proxies.size() + ")");
         syncProxiesWithDB();
-        refreshProxies();
+
     }
 }

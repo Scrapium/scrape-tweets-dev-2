@@ -45,15 +45,16 @@ public class Proxy {
         this.failStreak.incrementAndGet();
 
         int baseCooldownTime = 1000;
-        double exponentialFactor = 1.01;
+        double exponentialFactor = 1.5;
         long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 1);
+        long cooldownUntil = System.currentTimeMillis() + cooldownTime;
+        // TODO: check new cooldownuntil time is not more than 1 hour
 
         //System.out.println("back off time = " + (cooldownTime / 1000));
 
-        // Set the cooldown time
-        this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
-        // TODO: check new cooldownuntil time is not more than 1 hour
-        //System.out.println(new Timestamp(this.cooldownUntil.get()));
+        if(cooldownUntil > this.cooldownUntil.get()){
+            this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
+        }
     }
 
     public String getConnectionString(){
@@ -98,5 +99,9 @@ public class Proxy {
 
     public int getID() {
         return this.id;
+    }
+
+    public void debug_incrementUsageCount() {
+        this.usageCount.incrementAndGet();
     }
 }

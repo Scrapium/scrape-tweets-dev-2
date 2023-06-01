@@ -42,6 +42,7 @@ public class TweetThreadTaskProcessor {
                 .setReadTimeout(5000)
                 .setMaxConnections(10000)
                 .build();
+
         this.c = asyncHttpClient(config);
 
     }
@@ -54,6 +55,7 @@ public class TweetThreadTaskProcessor {
 
 
         Proxy proxy = this.scraper.proxyService.getNewProxy();
+
 
         if(proxy != null){
 

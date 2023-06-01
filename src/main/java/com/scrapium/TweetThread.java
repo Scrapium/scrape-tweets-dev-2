@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TweetThread  extends ThreadBase implements Runnable {
 
+
     private final Scraper scraper;
     private final BlockingQueue<TweetTask> taskQueue;
     private final int threadID;
