@@ -4,11 +4,14 @@ import com.scrapium.Scraper;
 import com.scrapium.ThreadBase;
 import com.scrapium.TweetTask;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LoggingThread extends ThreadBase implements Runnable {
 
+    private final Instant scraperStart;
     private Scraper scraper;
     private BlockingQueue<TweetTask> taskQueue;
     private AtomicInteger coroutineCount;
@@ -27,6 +30,23 @@ public class LoggingThread extends ThreadBase implements Runnable {
         this.successRequestCount = new AtomicInteger(0);
         this.failedRequestCount = new AtomicInteger(0);
         this.startEpoch = System.currentTimeMillis() / 1000;
+
+        this.scraperStart = Instant.now();
+    }
+
+    public static String format(Duration d) {
+        long days = d.toDays();
+        d = d.minusDays(days);
+        long hours = d.toHours();
+        d = d.minusHours(hours);
+        long minutes = d.toMinutes();
+        d = d.minusMinutes(minutes);
+        long seconds = d.getSeconds() ;
+        return
+                (days ==  0?"":days+" days,")+
+                        (hours == 0?"":hours+" hours,")+
+                        (minutes ==  0?"":minutes+" minutes,")+
+                        (seconds == 0?"":seconds+" seconds,");
     }
 
     @Override
@@ -51,8 +71,15 @@ public class LoggingThread extends ThreadBase implements Runnable {
             out += ("Success Total/s: " + (successPSTotal)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
             out += ("Available Proxies: " + (this.scraper.proxyService.getAvailableProxyCount())) + "\n";
+            out += ("Running for: " + format(Duration.between(this.scraperStart, Instant.now())));
 
             System.out.println(out);
+
+            /*
+            if(successPS == 0 && Duration.between(this.scraperStart, Instant.now()).toSeconds() > 30  ){
+                System.out.println("Requests per second == 0... EXITING.");
+                System.exit(0);
+            }*/
 
             this.lastSuccessCount = this.successRequestCount.get();
             this.lastFailedCount = this.failedRequestCount.get();

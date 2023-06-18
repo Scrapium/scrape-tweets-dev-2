@@ -22,7 +22,6 @@ public class ProxyThread extends ThreadBase implements Runnable {
     @Override
     public void run() {
         while (this.running) {
-            System.out.println("Proxy thread running");
 
             this.proxyService.updateAvailableProxies();
 

@@ -5,8 +5,13 @@ import com.scrapium.threads.LoggingThread;
 import com.scrapium.utils.DebugLogger;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.asynchttpclient.*;
 import org.asynchttpclient.proxy.ProxyServer;
+import org.asynchttpclient.proxy.ProxyType;
 
 import javax.net.ssl.*;
 
@@ -21,6 +26,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Base64;
 
 public class TweetThreadTaskProcessor {
     private final AsyncHttpClient c;
@@ -69,10 +75,11 @@ public class TweetThreadTaskProcessor {
 
 
         AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
-                .setConnectTimeout(Duration.ofMillis(5000))
-                .setRequestTimeout(Duration.ofMillis(5000))
+                .setConnectTimeout(Duration.ofMillis(8000))
+                .setRequestTimeout(Duration.ofMillis(8000))
                 .setReadTimeout(Duration.ofMillis(5000))
                 .setMaxConnections(10000)
+                .setMaxRequestRetry(1)
                 .build();
 
         this.c = asyncHttpClient(config);
@@ -87,16 +94,20 @@ public class TweetThreadTaskProcessor {
 
         Proxy proxy = this.scraper.proxyService.getNewProxy();
 
-
         if(proxy != null){
 
-            //System.out.print(" " + proxy.getID() + ", ");
 
             Request request1 = new RequestBuilder("GET")
                     .setUrl("http://httpforever.com")
                     .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
-                    .build();
 
+                   /* .setProxyServer(
+                            new ProxyServer.Builder("193.202.84.117", 8080)
+                                    .setProxyType(ProxyType.HTTP)
+                                    .setRealm(new Realm.Builder("mix1015B1GYKS", "4DtgsBJE")
+                                            .setScheme(Realm.AuthScheme.BASIC)))*/
+
+                    .build();
 
             c.executeRequest(request1, new handler(c, proxy, this));
         } else {

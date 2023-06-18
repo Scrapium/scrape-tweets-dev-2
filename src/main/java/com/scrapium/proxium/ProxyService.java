@@ -10,19 +10,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ProxyService {
 
 
-    private CopyOnWriteArrayList<Proxy> proxies;
-    private CopyOnWriteArrayList<Proxy> availableProxies;
+    private ArrayList<Proxy> proxies;
+    private ArrayList<Proxy> availableProxies;
 
     public ProxyService (){
-        this.proxies = new CopyOnWriteArrayList<Proxy>();
-        this.availableProxies = new CopyOnWriteArrayList<Proxy>();
+        this.proxies = new ArrayList<Proxy>();
+        this.availableProxies = new ArrayList<Proxy>();
     }
 
     public void loadProxies() {
-        try (BufferedReader br = new BufferedReader(new FileReader("./checked_proxies.txt"))) {
-            String _proxy_entry;
-            //try (Connection connection = DatabaseConnection.getConnection()) {
-             //   System.out.println("Got connection successfully");
+        synchronized (this.proxies){
+            try (BufferedReader br = new BufferedReader(new FileReader("./checked_proxies.txt"))) {
+                String _proxy_entry;
 
                 int i = 0;
 
@@ -55,8 +54,9 @@ public class ProxyService {
                 System.out.println("Failed to get connection!");
             }*/
 
-        } catch (IOException e) {
-            System.err.format("IOException: %s%n", e);
+            } catch (IOException e) {
+                System.err.format("IOException: %s%n", e);
+            }
         }
     }
 
@@ -69,42 +69,64 @@ public class ProxyService {
      */
 
     public void updateAvailableProxies(){
-        availableProxies.clear();
+        synchronized (this.availableProxies){
+            this.availableProxies = new ArrayList<Proxy>();
 
-
-
-        // benchmark the below for a better solution.
-        for (int i = 0; i < this.proxies.size(); i++){
-            // TODO: check isCoolDown function
-            if(!this.proxies.get(i).inCoolDown()){
-                availableProxies.add(this.proxies.get(i));
+            // benchmark the below for a better solution.
+            for (int i = 0; i < this.proxies.size(); i++){
+                // TODO: check isCoolDown function
+                if(!this.proxies.get(i).inCoolDown()){
+                    availableProxies.add(this.proxies.get(i));
+                }
             }
         }
 
-        System.out.println("Available proxy count = " + this.availableProxies.size());
+        //System.out.println("Available proxy count = " + this.availableProxies.size());
 
         if(this.availableProxies.size() < 50){
             System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE");
         }
 
-        //System.out.println("[proxyman] (" + availableProxies.size() + ") available proxies.");
-        Collections.sort(availableProxies, new Comparator<Proxy>() {
-            public int compare(Proxy p1, Proxy p2) {
-                return Integer.compare(p2.getSuccessDelta() - p2.getFailedCount(), p1.getSuccessDelta() - p2.getFailedCount());
-            }
-        });
+
+        synchronized (this.availableProxies) {
+            //System.out.println("[proxyman] (" + availableProxies.size() + ") available proxies.");
+            Collections.sort(availableProxies, new Comparator<Proxy>() {
+                public int compare(Proxy p1, Proxy p2) {
+                    return Integer.compare(p2.getSuccessDelta() - p2.getFailedCount(), p1.getSuccessDelta() - p2.getFailedCount());
+                }
+            });
+        }
 
         //System.out.println("[proxyman] Sorted available proxies!");
     }
 
     // get one of the top 50 proxies, that aren't currently banned.
     public Proxy getNewProxy() {
-        Random rand = new Random();
-        Proxy randomProxy = availableProxies.get(rand.nextInt(30));
-        return randomProxy;
+        synchronized (this.availableProxies){
+
+            boolean proxyInCoolDown = true;
+            int attempts = 0;
+
+            Proxy randomProxy = null;
+
+            while(proxyInCoolDown && attempts <= 150){
+                Random rand = new Random();
+                randomProxy = availableProxies.get(rand.nextInt(30));
+                proxyInCoolDown = randomProxy.inCoolDown();
+                attempts++;
+            }
+
+            if(attempts > 100){
+                System.out.println("Warning: iterated over 150 random proxies and couldn't find a viable proxy NOT in cooldown.");
+            }
+
+            return randomProxy;
+        }
     }
 
     public int getAvailableProxyCount(){
-        return availableProxies.size();
+        synchronized (this.availableProxies){
+            return availableProxies.size();
+        }
     }
 }

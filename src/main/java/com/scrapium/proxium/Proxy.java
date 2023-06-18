@@ -48,15 +48,20 @@ public class Proxy {
             //System.out.println("Proxy fail streak over 50.");
             int baseCooldownTime = 1000;
             int maxCooldownTime = 120000;
-            double exponentialFactor = 1.15;//1.2;
-            long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 1);
+            double exponentialFactor = 0.5;//1.2;
+            long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 50);
+
+            if(cooldownTime > maxCooldownTime){
+                cooldownTime = maxCooldownTime;
+            }
+
             long cooldownUntil = System.currentTimeMillis() + cooldownTime;
 
-            if(cooldownTime < maxCooldownTime){
-                if(cooldownUntil > this.cooldownUntil.get()){
-                    //System.out.println("[" + this.id + "] Proxy has failed, setting time to +" + cooldownTime);
-                    this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
-                }
+
+
+            if(cooldownUntil > this.cooldownUntil.get()){
+                //System.out.println("[" + this.id + "] Proxy has failed, setting time to " + cooldownTime + ", fail streak = " + failStreak.get());
+                this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
             }
         }
     }
