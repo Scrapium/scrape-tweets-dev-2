@@ -1,20 +1,22 @@
 package com.scrapium;
 
-import com.scrapium.proxium.Proxy;
-import com.scrapium.proxium.ProxyService;
-import com.scrapium.proxium.loadProxies.ProxyLoader;
 import com.scrapium.tests.Benchmark;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+
+import java.util.ArrayList;
 // makes sense to use PostgreSQL for data, and Redis for caching & analytics
 
+/*
+    Troubleshooting
+    - Requests drop to 0
+        - Maybe you're using too many resources - there's a perfect balance.
+            - Having too many worker threads leads to blocks and switching between threads - slowing the system down.
+            - Using too much memory and the program can't allocate memory
+        - There are no proxies available
+        - There are no tasks left
+        - You have reached the maximum co-currency
+            - Something may be causing a hang - ie. in the request handler, ie. not updating the coroutine count properly
+
+ */
 
 public class Main {
 
@@ -41,11 +43,19 @@ public class Main {
 
         // note: The last parameter of Scrape() is not currently used.
 
-        Scraper scraper = new Scraper(1, 100, 10);
+
+        Scraper scraper = new Scraper(6, 4000, 10);
+        //scraper.proxyService.loadProxies();
         scraper.scrape();
+
+
+
 
         // To load the proxies into the database, run this function instead of scraper.scrape()
         //ProxyLoader.loadProxies();
+
+
+
 
     }
 

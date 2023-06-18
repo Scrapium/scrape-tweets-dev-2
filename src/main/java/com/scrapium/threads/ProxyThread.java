@@ -1,0 +1,36 @@
+package com.scrapium.threads;
+
+import com.scrapium.Scraper;
+import com.scrapium.ThreadBase;
+import com.scrapium.TweetTask;
+import com.scrapium.proxium.ProxyService;
+
+import java.util.concurrent.BlockingQueue;
+
+public class ProxyThread extends ThreadBase implements Runnable {
+
+
+    private final Scraper scraper;
+    private final ProxyService proxyService;
+
+    public ProxyThread(Scraper scraper, ProxyService proxyService) {
+        this.scraper = scraper;
+        this.proxyService = proxyService;
+        this.proxyService.loadProxies();
+    }
+
+    @Override
+    public void run() {
+        while (this.running) {
+            System.out.println("Proxy thread running");
+
+            this.proxyService.updateAvailableProxies();
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}

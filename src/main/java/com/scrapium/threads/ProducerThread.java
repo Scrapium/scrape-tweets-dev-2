@@ -1,5 +1,8 @@
-package com.scrapium;
+package com.scrapium.threads;
 
+import com.scrapium.Scraper;
+import com.scrapium.ThreadBase;
+import com.scrapium.TweetTask;
 import com.scrapium.utils.DebugLogger;
 
 import java.util.concurrent.BlockingQueue;

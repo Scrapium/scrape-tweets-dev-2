@@ -1,4 +1,8 @@
-package com.scrapium;
+package com.scrapium.threads;
+
+import com.scrapium.Scraper;
+import com.scrapium.ThreadBase;
+import com.scrapium.TweetTask;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +50,7 @@ public class LoggingThread extends ThreadBase implements Runnable {
             out += ("Success/s: " + (successPS)) + "\n";
             out += ("Success Total/s: " + (successPSTotal)) + "\n";
             out += ("Failed/s: " + (failedPS)) + "\n";
+            out += ("Available Proxies: " + (this.scraper.proxyService.getAvailableProxyCount())) + "\n";
 
             System.out.println(out);
 

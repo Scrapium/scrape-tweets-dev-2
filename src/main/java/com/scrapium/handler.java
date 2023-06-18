@@ -20,47 +20,50 @@ public class handler implements AsyncHandler<Integer> {
         this.processor.incrementCoroutineCount();
     }
     @Override
-        public AsyncHandler.State onStatusReceived(HttpResponseStatus responseStatus) throws Exception {
-            status = responseStatus.getStatusCode();
-            if(status >= 200 && status < 300){
-                this.processor.getScraper().logger.increaseSuccessRequestCount();
-                proxy.onSuccess();
-            } else {
-                this.processor.getScraper().logger.increaseFailedRequestCount();
-                proxy.onFailure();
-            }
-            //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
-            return AsyncHandler.State.ABORT;
+    public AsyncHandler.State onStatusReceived(HttpResponseStatus responseStatus) throws Exception {
+        status = responseStatus.getStatusCode();
+        if(status >= 200 && status < 300){
+            this.processor.getScraper().logger.increaseSuccessRequestCount();
+            proxy.onSuccess();
+        } else {
+            this.processor.getScraper().logger.increaseFailedRequestCount();
+            proxy.onFailure();
         }
+
+        //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
+        return State.CONTINUE;
+
+    }
 
     @Override
     public State onHeadersReceived(HttpHeaders headers) throws Exception {
         //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
-        return AsyncHandler.State.ABORT;
+        return State.CONTINUE;
     }
 
     @Override
-        public AsyncHandler.State onBodyPartReceived(HttpResponseBodyPart bodyPart) throws Exception {
+    public AsyncHandler.State onBodyPartReceived(HttpResponseBodyPart bodyPart) throws Exception {
 
-            //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
-            return AsyncHandler.State.ABORT;
-        }
-        @Override
-        public Integer onCompleted() throws Exception {
-            this.processor.decrementCoroutineCount();
+        //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
+        return State.CONTINUE;
 
-            //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
-            return 200;
-        }
+    }
+    @Override
+    public Integer onCompleted() throws Exception {
+        this.processor.decrementCoroutineCount();
 
-        @Override
-        public void onThrowable(Throwable t) {
-            proxy.onFailure();
-            // Handle exceptions here
-            this.processor.getScraper().logger.increaseFailedRequestCount();
-            this.processor.decrementCoroutineCount();
-            //System.err.println("An error occurred: " + t.getMessage());
-        }
+        //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
+        return 200;
+    }
+
+    @Override
+    public void onThrowable(Throwable t) {
+        proxy.onFailure();
+        // Handle exceptions here
+        this.processor.getScraper().logger.increaseFailedRequestCount();
+        this.processor.decrementCoroutineCount();
+        //System.err.println("An error occurred: " + t.getMessage());
+    }
 
 
 }

@@ -1,11 +1,16 @@
-package com.scrapium;
+package com.scrapium.threads;
 
+import com.scrapium.Scraper;
+import com.scrapium.ThreadBase;
+import com.scrapium.TweetTask;
+import com.scrapium.TweetThreadTaskProcessor;
 import com.scrapium.utils.DebugLogger;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TweetThread  extends ThreadBase implements Runnable {
+
 
 
     private final Scraper scraper;
@@ -37,7 +42,6 @@ public class TweetThread  extends ThreadBase implements Runnable {
                     DebugLogger.log("TweetThread: Ran cycle");
                     DebugLogger.log("TweetThread: Task Taken");
                     this.taskProcessor.processNextTask();
-                    //System.out.print(".");
                     DebugLogger.log("Decrementing counter");
 
                 } else {

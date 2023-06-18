@@ -1,131 +1,110 @@
 package com.scrapium.proxium;
 
-import com.scrapium.DatabaseConnection;
-
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ProxyService {
 
 
-    /*
-
-    UPDATE test_proxy
-        SET usage_count = 0,
-        success_count = 0,
-        failed_count = 0,
-        fail_streak = 0,
-        cooldown_until = NULL,
-        last_used = NULL;
-
-     */
-
-    private ArrayList<Proxy> proxies;
+    private CopyOnWriteArrayList<Proxy> proxies;
+    private CopyOnWriteArrayList<Proxy> availableProxies;
 
     public ProxyService (){
-        this.proxies = new ArrayList<Proxy>();
+        this.proxies = new CopyOnWriteArrayList<Proxy>();
+        this.availableProxies = new CopyOnWriteArrayList<Proxy>();
     }
 
-    private void refreshProxies() throws SQLException {
+    public void loadProxies() {
+        try (BufferedReader br = new BufferedReader(new FileReader("./checked_proxies.txt"))) {
+            String _proxy_entry;
+            //try (Connection connection = DatabaseConnection.getConnection()) {
+             //   System.out.println("Got connection successfully");
 
-        String query = "SELECT id, connection_string, usage_count, success_count, failed_count, fail_streak, cooldown_until " +
+                int i = 0;
+
+                while ((_proxy_entry = br.readLine()) != null) {
+
+                    String proxy_entry = _proxy_entry.replaceAll("[\\r\\n]+", "");
+                    String connString = proxy_entry;
+
+                    Proxy proxy = new Proxy(
+                            i++,
+                            connString,
+                            0,
+                            0,
+                            0,
+                            0,
+                            new Timestamp(0)
+                    );
+
+                    //System.out.println("added ");
+                    //System.out.print(proxy.toString());
+
+                    this.proxies.add(proxy);
+
+                }
+
+                System.out.println("Loaded (" + i + ") proxies!");
+                /*
+            } catch (SQLException e) {
+                e.printStackTrace();
+                System.out.println("Failed to get connection!");
+            }*/
+
+        } catch (IOException e) {
+            System.err.format("IOException: %s%n", e);
+        }
+    }
+
+    /*
+            String query = "SELECT id, connection_string, usage_count, success_count, failed_count, fail_streak, cooldown_until " +
                 "FROM test_proxy " +
                 "WHERE (cooldown_until IS NULL OR NOW() > cooldown_until) " +
-                "ORDER BY CASE WHEN usage_count = 0 THEN 1 ELSE success_count / usage_count END DESC" +
-                "LIMIT 150";
+                "ORDER BY CASE WHEN usage_count = 0 THEN 1 ELSE success_count / usage_count END DESC, last_used ASC " +
+                "LIMIT 50";
+     */
 
-        List<Proxy> fetchedProxies = new ArrayList<>();
+    public void updateAvailableProxies(){
+        availableProxies.clear();
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query);
-             ResultSet resultSet = preparedStatement.executeQuery()) {
-            while (resultSet.next()) {
-                fetchedProxies.add(new Proxy(
-                        resultSet.getInt("id"),
-                        resultSet.getString("connection_string"),
-                        resultSet.getInt("usage_count"),
-                        resultSet.getInt("success_count"),
-                        resultSet.getInt("failed_count"),
-                        resultSet.getInt("fail_streak"),
-                        resultSet.getTimestamp("cooldown_until")
-                ));
+
+
+        // benchmark the below for a better solution.
+        for (int i = 0; i < this.proxies.size(); i++){
+            // TODO: check isCoolDown function
+            if(!this.proxies.get(i).inCoolDown()){
+                availableProxies.add(this.proxies.get(i));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
-        if(fetchedProxies.size() == 0){
-            System.out.println("Proxies list empty!");
+        System.out.println("Available proxy count = " + this.availableProxies.size());
+
+        if(this.availableProxies.size() < 50){
+            System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE");
         }
 
-        synchronized (proxies) {
-            this.proxies.clear();
-            this.proxies.addAll(fetchedProxies);
-        }
+        //System.out.println("[proxyman] (" + availableProxies.size() + ") available proxies.");
+        Collections.sort(availableProxies, new Comparator<Proxy>() {
+            public int compare(Proxy p1, Proxy p2) {
+                return Integer.compare(p2.getSuccessDelta() - p2.getFailedCount(), p1.getSuccessDelta() - p2.getFailedCount());
+            }
+        });
+
+        //System.out.println("[proxyman] Sorted available proxies!");
     }
 
-    private void syncProxiesWithDB() throws SQLException {
-        String query = "UPDATE test_proxy SET usage_count = ?, success_count = ?, failed_count = ?, fail_streak = ?, cooldown_until = ?, last_used = ? WHERE id = ?";
-
-        try (Connection connection = DatabaseConnection.getConnection()){
-
-            PreparedStatement preparedStatement = connection.prepareStatement(query);
-
-            synchronized (proxies) {
-                for (Proxy proxy : proxies) {
-                    preparedStatement.setInt(1, proxy.getUsageCount());
-                    preparedStatement.setInt(2, proxy.getSuccessCount());
-                    preparedStatement.setInt(3, proxy.getFailedCount());
-                    preparedStatement.setInt(4, proxy.getFailStreak());
-                    preparedStatement.setTimestamp(5, proxy.getCooldownUntil());
-                    preparedStatement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
-                    preparedStatement.setInt(7, proxy.getID());
-                    preparedStatement.addBatch();
-                }
-            }
-
-
-
-            int[] affectedRows = preparedStatement.executeBatch(); // Execute the batch
-            System.out.println("Updated " + affectedRows.length + " row(s) in the proxies table.");
-
-            refreshProxies();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
+    // get one of the top 50 proxies, that aren't currently banned.
     public Proxy getNewProxy() {
-        synchronized (proxies) {
-            if(proxies.size() == 0){
-                return null;
-            }
-
-            Proxy proxy = null;
-
-            while(
-                    proxy == null ||
-                    proxy.getCooldownUntil().after(new Timestamp(System.currentTimeMillis()))
-            ){
-
-
-                Random random = new Random();
-                int randomIndex = random.nextInt(proxies.size());
-                proxy = proxies.get(randomIndex);
-
-            }
-
-
-            return proxy;
-        }
+        Random rand = new Random();
+        Proxy randomProxy = availableProxies.get(rand.nextInt(30));
+        return randomProxy;
     }
 
-    public void syncAndRefresh() throws SQLException {
-        System.out.println("> ran syncAndRefresh (proxy list length = " + proxies.size() + ")");
-        syncProxiesWithDB();
-
+    public int getAvailableProxyCount(){
+        return availableProxies.size();
     }
 }

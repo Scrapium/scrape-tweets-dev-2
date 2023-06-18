@@ -1,6 +1,10 @@
 package com.scrapium;
 
 import com.scrapium.proxium.ProxyService;
+import com.scrapium.threads.LoggingThread;
+import com.scrapium.threads.ProducerThread;
+import com.scrapium.threads.ProxyThread;
+import com.scrapium.threads.TweetThread;
 import com.scrapium.utils.DebugLogger;
 
 import java.util.ArrayList;
@@ -19,9 +23,10 @@ public class Scraper {
 
     //public AtomicInteger coroutineCount;
     public LoggingThread logger;
+    public ProxyThread proxyThread;
+
     private ProducerThread producer;
     private ArrayList<ThreadBase> threads;
-    private ProxiesThread proxies;
 
     // the number of coroutines currently running
 
@@ -64,13 +69,13 @@ public class Scraper {
         threads.add(this.logger);
         threadPool.submit(this.logger);
 
+        this.proxyThread = new ProxyThread(this, this.proxyService);
+        threads.add(this.proxyThread);
+        threadPool.submit(this.proxyThread);
+
         this.producer = new ProducerThread(this, tweetQueue);
         threads.add(this.producer);
         threadPool.submit(this.producer);
-
-        this.proxies = new ProxiesThread(this, proxyService);
-        threads.add(this.proxies);
-        threadPool.submit(this.proxies);
 
         for (int i = 0; i < consumerCount; i++) {
             DebugLogger.log("Scraper: Created consumer thread.");
@@ -84,7 +89,6 @@ public class Scraper {
         for (Iterator<ThreadBase> iterator = threads.iterator(); iterator.hasNext(); ) {
             ThreadBase item = iterator.next();
             item.running = false;
-            // do something with the item
         }
 
         try {

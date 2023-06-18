@@ -26,8 +26,7 @@ public class Proxy {
         this.failedCount = new AtomicInteger(_failedCount);
         this.failStreak = new AtomicInteger(_failStreak);
 
-        long coolUntil = ( _cooldownUntil == null ) ? System.currentTimeMillis() : _cooldownUntil.getTime();
-
+        long coolUntil = ( _cooldownUntil == null ) ? 0 : _cooldownUntil.getTime();
         this.cooldownUntil = new AtomicLong(coolUntil);
 
     }
@@ -44,16 +43,21 @@ public class Proxy {
         this.failedCount.incrementAndGet();
         this.failStreak.incrementAndGet();
 
-        int baseCooldownTime = 1000;
-        double exponentialFactor = 1.5;
-        long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 1);
-        long cooldownUntil = System.currentTimeMillis() + cooldownTime;
-        // TODO: check new cooldownuntil time is not more than 1 hour
+        if(this.failStreak.get() > 50){
 
-        //System.out.println("back off time = " + (cooldownTime / 1000));
+            //System.out.println("Proxy fail streak over 50.");
+            int baseCooldownTime = 1000;
+            int maxCooldownTime = 120000;
+            double exponentialFactor = 1.15;//1.2;
+            long cooldownTime = baseCooldownTime * (long) Math.pow(exponentialFactor, failStreak.get() - 1);
+            long cooldownUntil = System.currentTimeMillis() + cooldownTime;
 
-        if(cooldownUntil > this.cooldownUntil.get()){
-            this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
+            if(cooldownTime < maxCooldownTime){
+                if(cooldownUntil > this.cooldownUntil.get()){
+                    //System.out.println("[" + this.id + "] Proxy has failed, setting time to +" + cooldownTime);
+                    this.cooldownUntil.set(System.currentTimeMillis() + cooldownTime);
+                }
+            }
         }
     }
 
@@ -103,5 +107,29 @@ public class Proxy {
 
     public void debug_incrementUsageCount() {
         this.usageCount.incrementAndGet();
+    }
+
+    public int getSuccessDelta(){
+        return this.getSuccessCount() - this.getFailedCount();
+    }
+
+    public boolean inCoolDown(){
+        if(this.cooldownUntil.get() < System.currentTimeMillis()){
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Proxy{" +
+                "id=" + id +
+                ", connectionString='" + connectionString + '\'' +
+                ", usageCount=" + usageCount +
+                ", successCount=" + successCount +
+                ", failedCount=" + failedCount +
+                ", failStreak=" + failStreak +
+                ", cooldownUntil=" + cooldownUntil +
+                '}';
     }
 }

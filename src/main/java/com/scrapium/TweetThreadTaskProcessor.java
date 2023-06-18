@@ -1,13 +1,24 @@
 package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
+import com.scrapium.threads.LoggingThread;
 import com.scrapium.utils.DebugLogger;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import org.asynchttpclient.*;
 import org.asynchttpclient.proxy.ProxyServer;
+
+import javax.net.ssl.*;
 
 import static org.asynchttpclient.Dsl.*;
 
 
+import java.net.Socket;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,7 +38,26 @@ public class TweetThreadTaskProcessor {
 
     private int requestCount;
 
+    private SSLContext createSslContext() throws Exception {
+        X509TrustManager tm = new X509TrustManager() {
 
+            public void checkClientTrusted(X509Certificate[] xcs,
+                                           String string) throws CertificateException {
+            }
+
+            public void checkServerTrusted(X509Certificate[] xcs,
+                                           String string) throws CertificateException {
+            }
+
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        };
+
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(null, new TrustManager[] { tm }, null);
+        return ctx;
+    }
 
     public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
         this.threadID = threadID;
@@ -36,10 +66,12 @@ public class TweetThreadTaskProcessor {
         this.coroutineCount = coroutineCount;
         this.tweetThreadRunning = running;
 
+
+
         AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
-                .setConnectTimeout(5000)
-                .setRequestTimeout(5000)
-                .setReadTimeout(5000)
+                .setConnectTimeout(Duration.ofMillis(5000))
+                .setRequestTimeout(Duration.ofMillis(5000))
+                .setReadTimeout(Duration.ofMillis(5000))
                 .setMaxConnections(10000)
                 .build();
 
@@ -53,7 +85,6 @@ public class TweetThreadTaskProcessor {
     public void processNextTask(){
         DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-
         Proxy proxy = this.scraper.proxyService.getNewProxy();
 
 
@@ -62,15 +93,15 @@ public class TweetThreadTaskProcessor {
             //System.out.print(" " + proxy.getID() + ", ");
 
             Request request1 = new RequestBuilder("GET")
-                    .setUrl("http://httpforever.com/")
+                    .setUrl("http://httpforever.com")
                     .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
                     .build();
 
 
             c.executeRequest(request1, new handler(c, proxy, this));
+        } else {
+            System.out.println("No proxies are available!");
         }
-
-
 
     }
 
