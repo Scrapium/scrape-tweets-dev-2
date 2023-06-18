@@ -45,7 +45,7 @@ public class Main {
 
         // 6, 5000 - AWS 800 requests per second
 
-        Scraper scraper = new Scraper(1, 1, 10);
+        Scraper scraper = new Scraper(6, 3000, 10);
         //scraper.proxyService.loadProxies();
         scraper.scrape();
 
