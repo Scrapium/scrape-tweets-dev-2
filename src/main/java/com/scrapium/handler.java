@@ -25,11 +25,11 @@ public class handler implements AsyncHandler<Integer> {
         if(status >= 200 && status < 300){
             this.processor.getScraper().logger.increaseSuccessRequestCount();
             proxy.onSuccess();
-            System.out.print("✅");
+            System.out.print("V");
         } else {
             this.processor.getScraper().logger.increaseFailedRequestCount();
             proxy.onFailure();
-            System.out.print("❌");
+            System.out.print("X");
         }
 
         //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }

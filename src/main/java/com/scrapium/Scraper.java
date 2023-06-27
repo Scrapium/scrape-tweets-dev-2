@@ -66,21 +66,21 @@ public class Scraper {
     public void scrape() {
 
         this.logger = new LoggingThread(this, tweetQueue);
-        threads.add(this.logger);
+        //threads.add(this.logger);
         threadPool.submit(this.logger);
 
         this.proxyThread = new ProxyThread(this, this.proxyService);
-        threads.add(this.proxyThread);
+        //threads.add(this.proxyThread);
         threadPool.submit(this.proxyThread);
 
         this.producer = new ProducerThread(this, tweetQueue);
-        threads.add(this.producer);
+        //threads.add(this.producer);
         threadPool.submit(this.producer);
 
         for (int i = 0; i < consumerCount; i++) {
             DebugLogger.log("Scraper: Created consumer thread.");
             TweetThread tweetThread = new TweetThread(i + 1, this, tweetQueue);
-            threads.add(tweetThread);
+           // threads.add(tweetThread);
             threadPool.submit(tweetThread);
         }
     }

@@ -75,9 +75,9 @@ public class TweetThreadTaskProcessor {
 
 
         AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
-                .setConnectTimeout(Duration.ofMillis(8000))
-                .setRequestTimeout(Duration.ofMillis(8000))
-                .setReadTimeout(Duration.ofMillis(5000))
+                .setConnectTimeout(8000)
+                .setRequestTimeout(8000)
+                .setReadTimeout(5000)
                 .setMaxConnections(10000)
                 .setMaxRequestRetry(1)
                 .build();
