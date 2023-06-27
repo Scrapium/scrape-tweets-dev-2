@@ -43,6 +43,7 @@ public class Scraper {
         this.threads = new ArrayList<ThreadBase>();
 
 
+        /*
         // Handle the SIGINT signal (CTRL + C)
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down gracefully...");
@@ -59,7 +60,7 @@ public class Scraper {
                 System.out.println("SIGTSTP signal received!");
                 System.exit(0);
             });
-        }
+        } */
 
     }
 
