@@ -24,12 +24,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Base64;
 
 public class TweetThreadTaskProcessor {
-    private final AsyncHttpClient c;
+    private AsyncHttpClient c;
+    private final DefaultAsyncHttpClientConfig clientConfig;
 
     /*
         Notes TODO:
@@ -43,6 +45,7 @@ public class TweetThreadTaskProcessor {
     private AtomicInteger coroutineCount;
 
     private int requestCount;
+    private Instant lastCleanup;
 
     private SSLContext createSslContext() throws Exception {
         X509TrustManager tm = new X509TrustManager() {
@@ -74,7 +77,7 @@ public class TweetThreadTaskProcessor {
 
 
 
-        AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
+        this.clientConfig = new DefaultAsyncHttpClientConfig.Builder()
                 .setConnectTimeout(8000)
                 .setRequestTimeout(8000)
                 .setReadTimeout(5000)
@@ -82,8 +85,10 @@ public class TweetThreadTaskProcessor {
                 .setMaxRequestRetry(1)
                 .build();
 
-        this.c = asyncHttpClient(config);
+        this.c = asyncHttpClient(this.clientConfig);
 
+
+        this.lastCleanup = Instant.now();
     }
 
     /*
@@ -100,13 +105,6 @@ public class TweetThreadTaskProcessor {
             Request request1 = new RequestBuilder("GET")
                     .setUrl("http://httpforever.com")
                     .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
-
-                   /* .setProxyServer(
-                            new ProxyServer.Builder("193.202.84.117", 8080)
-                                    .setProxyType(ProxyType.HTTP)
-                                    .setRealm(new Realm.Builder("mix1015B1GYKS", "4DtgsBJE")
-                                            .setScheme(Realm.AuthScheme.BASIC)))*/
-
                     .build();
 
             c.executeRequest(request1, new handler(c, proxy, this));
@@ -114,6 +112,16 @@ public class TweetThreadTaskProcessor {
             System.out.println("No proxies are available!");
         }
 
+        doCheckMemCleanup();
+
+    }
+
+    private void doCheckMemCleanup() {
+        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(20))){
+            this.lastCleanup = Instant.now();
+            this.c = asyncHttpClient(this.clientConfig);
+            System.out.println("Did cleanup of client request object on thread id " + threadID);
+        }
     }
 
     public Scraper getScraper(){

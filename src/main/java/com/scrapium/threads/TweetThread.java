@@ -55,7 +55,7 @@ public class TweetThread  extends ThreadBase implements Runnable {
                         //System.out.println("  Reason: MAX CO-ROUTINES (" + this.coroutineCount.get() + "/" + scraper.maxCoroutineCount + ")");
                     }
 
-                    Thread.sleep(50); // Sleep when the maximum number of tasks are being executed
+                    Thread.sleep(150); // Sleep when the maximum number of tasks are being executed
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
