@@ -18,6 +18,7 @@ import javax.net.ssl.*;
 import static org.asynchttpclient.Dsl.*;
 
 
+import java.io.IOException;
 import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -81,7 +82,7 @@ public class TweetThreadTaskProcessor {
                 .setConnectTimeout(8000)
                 .setRequestTimeout(8000)
                 .setReadTimeout(5000)
-                .setMaxConnections(10000)
+                .setMaxConnections(5000)
                 .setMaxRequestRetry(1)
                 .build();
 
@@ -112,17 +113,8 @@ public class TweetThreadTaskProcessor {
             System.out.println("No proxies are available!");
         }
 
-        doCheckMemCleanup();
-
     }
 
-    private void doCheckMemCleanup() {
-        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(20))){
-            this.lastCleanup = Instant.now();
-            this.c = asyncHttpClient(this.clientConfig);
-            System.out.println("Did cleanup of client request object on thread id " + threadID);
-        }
-    }
 
     public Scraper getScraper(){
         return this.scraper;
