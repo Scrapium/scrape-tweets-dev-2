@@ -90,29 +90,45 @@ public class TweetThreadTaskProcessor {
 
 
         this.lastCleanup = Instant.now();
+
+    }
+
+    public void doClientCleanupTick(){
+        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(180))){
+            System.out.println("[!] Doing client clean up.");
+            this.lastCleanup = Instant.now();
+            try {
+                this.c.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            this.coroutineCount.set(0);
+            this.c = asyncHttpClient(this.clientConfig);
+        }
     }
 
     /*
         Run Continuously
      */
     public void processNextTask(){
-        DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-        Proxy proxy = this.scraper.proxyService.getNewProxy();
+        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(10))){
+            DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-        if(proxy != null){
+            Proxy proxy = this.scraper.proxyService.getNewProxy();
 
+            if(proxy != null){
 
-            Request request1 = new RequestBuilder("GET")
-                    .setUrl("http://httpforever.com")
-                    .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
-                    .build();
+                Request request1 = new RequestBuilder("GET")
+                        .setUrl("http://httpforever.com")
+                        .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
+                        .build();
 
-            c.executeRequest(request1, new handler(c, proxy, this));
-        } else {
-            System.out.println("No proxies are available!");
+                c.executeRequest(request1, new handler(c, proxy, this));
+            } else {
+                System.out.println("No proxies are available!");
+            }
         }
-
     }
 
 

@@ -10,12 +10,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ProxyService {
 
 
+    private final Random rand;
     private ArrayList<Proxy> proxies;
     private ArrayList<Proxy> availableProxies;
 
     public ProxyService (){
         this.proxies = new ArrayList<Proxy>();
         this.availableProxies = new ArrayList<Proxy>();
+        this.rand = new Random();
     }
 
     public void loadProxies() {
@@ -110,14 +112,20 @@ public class ProxyService {
             Proxy randomProxy = null;
 
             while(proxyInCoolDown && attempts <= 150){
-                Random rand = new Random();
-                randomProxy = availableProxies.get(rand.nextInt(30));
+
+                int randInd = rand.nextInt(30);
+                if(randInd < 30){
+                    randInd = availableProxies.size() - 1;
+                }
+                randomProxy = availableProxies.get(randInd);
                 proxyInCoolDown = randomProxy.inCoolDown();
                 attempts++;
             }
 
             if(attempts > 100){
                 System.out.println("Warning: iterated over 150 random proxies and couldn't find a viable proxy NOT in cooldown.");
+
+                // TODO: reset all proxies
             }
 
             return randomProxy;

@@ -60,6 +60,7 @@ public class handler implements AsyncHandler<Integer> {
     @Override
     public void onThrowable(Throwable t) {
         proxy.onFailure();
+        //System.out.print("E");
         // Handle exceptions here
         this.processor.getScraper().logger.increaseFailedRequestCount();
         this.processor.decrementCoroutineCount();

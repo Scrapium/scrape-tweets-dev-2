@@ -33,7 +33,8 @@ public class TweetThread  extends ThreadBase implements Runnable {
     @Override
     public void run() {
         while (this.running) {
-            //System.out.println("loop");
+            //System.out.print("L");
+            this.taskProcessor.doClientCleanupTick();
             try {
                 //System.out.println("tweetThread coroutine count = " + this.coroutineCount.get());
                 //System.out.println("tweetThread taskQueue = " + this.taskQueue.size());
@@ -57,7 +58,7 @@ public class TweetThread  extends ThreadBase implements Runnable {
 
                     Thread.sleep(150); // Sleep when the maximum number of tasks are being executed
                 }
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 DebugLogger.log("Interrupted Exception!");
             }
