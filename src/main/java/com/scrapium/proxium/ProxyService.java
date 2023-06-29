@@ -85,8 +85,10 @@ public class ProxyService {
 
         //System.out.println("Available proxy count = " + this.availableProxies.size());
 
-        if(this.availableProxies.size() < 50){
-            System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE (" + availableProxies.size() + ")");
+        synchronized (this.availableProxies) {
+            if (this.availableProxies.size() < 50) {
+                System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE (" + availableProxies.size() + ")");
+            }
         }
 
 
@@ -104,32 +106,36 @@ public class ProxyService {
 
     // get one of the top 50 proxies, that aren't currently banned.
     public Proxy getNewProxy() {
-        synchronized (this.availableProxies){
 
-            boolean proxyInCoolDown = true;
-            int attempts = 0;
+        boolean proxyInCoolDown = true;
+        int attempts = 0;
 
-            Proxy randomProxy = null;
+        Proxy randomProxy = null;
 
-            while(proxyInCoolDown && attempts <= 150){
+        while(proxyInCoolDown && attempts <= 150){
+            synchronized (this.availableProxies) {
 
+                if (availableProxies.size() == 0) {
+                    System.out.println("No available Proxies....");
+                    return randomProxy;
+                }
                 int randInd = rand.nextInt(30);
-                if(randInd > availableProxies.size()){
+                if (randInd > availableProxies.size()) {
                     randInd = availableProxies.size() - 1;
                 }
                 randomProxy = availableProxies.get(randInd);
                 proxyInCoolDown = randomProxy.inCoolDown();
                 attempts++;
             }
-
-            if(attempts > 100){
-                System.out.println("Warning: iterated over 150 random proxies and couldn't find a viable proxy NOT in cooldown.");
-
-                // TODO: reset all proxies
-            }
-
-            return randomProxy;
         }
+
+        if(attempts > 100){
+            System.out.println("Warning: iterated over 150 random proxies and couldn't find a viable proxy NOT in cooldown.");
+
+            // TODO: reset all proxies
+        }
+
+        return randomProxy;
     }
 
     public int getAvailableProxyCount(){

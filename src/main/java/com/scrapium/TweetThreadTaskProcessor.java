@@ -48,6 +48,8 @@ public class TweetThreadTaskProcessor {
     private int requestCount;
     private Instant lastCleanup;
 
+    private final boolean DO_CLEANUP = false;
+
     private SSLContext createSslContext() throws Exception {
         X509TrustManager tm = new X509TrustManager() {
 
@@ -94,16 +96,18 @@ public class TweetThreadTaskProcessor {
     }
 
     public void doClientCleanupTick(){
-        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(180))){
-            System.out.println("[!] Doing client clean up.");
-            this.lastCleanup = Instant.now();
-            try {
-                this.c.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        if(DO_CLEANUP){
+            if(this.lastCleanup.isBefore(Instant.now().minusSeconds(180))){
+                System.out.println("[!] Doing client clean up.");
+                this.lastCleanup = Instant.now();
+                try {
+                    this.c.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                this.coroutineCount.set(0);
+                this.c = asyncHttpClient(this.clientConfig);
             }
-            this.coroutineCount.set(0);
-            this.c = asyncHttpClient(this.clientConfig);
         }
     }
 
@@ -112,7 +116,7 @@ public class TweetThreadTaskProcessor {
      */
     public void processNextTask(){
 
-        if(this.lastCleanup.isBefore(Instant.now().minusSeconds(10))){
+        if(!DO_CLEANUP || this.lastCleanup.isBefore(Instant.now().minusSeconds(10))){
             DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
             Proxy proxy = this.scraper.proxyService.getNewProxy();
