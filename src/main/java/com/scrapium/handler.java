@@ -53,7 +53,6 @@ public class handler implements AsyncHandler<Integer> {
     @Override
     public Integer onCompleted() throws Exception {
         this.processor.decrementCoroutineCount();
-        //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
         return 200;
     }
 

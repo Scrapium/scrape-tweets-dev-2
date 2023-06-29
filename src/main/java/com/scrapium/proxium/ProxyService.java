@@ -86,7 +86,7 @@ public class ProxyService {
         //System.out.println("Available proxy count = " + this.availableProxies.size());
 
         if(this.availableProxies.size() < 50){
-            System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE");
+            System.out.println("!! INCREDIBLY LOW AVAILABLE PROXY POOL SIZE (" + availableProxies.size() + ")");
         }
 
 
@@ -114,7 +114,7 @@ public class ProxyService {
             while(proxyInCoolDown && attempts <= 150){
 
                 int randInd = rand.nextInt(30);
-                if(randInd < 30){
+                if(randInd > availableProxies.size()){
                     randInd = availableProxies.size() - 1;
                 }
                 randomProxy = availableProxies.get(randInd);
