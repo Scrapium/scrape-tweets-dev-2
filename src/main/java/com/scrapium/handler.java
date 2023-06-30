@@ -1,6 +1,7 @@
 package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
+import com.scrapium.tweetium.TweetTask;
 import io.netty.handler.codec.http.HttpHeaders;
 import org.asynchttpclient.*;
 
@@ -10,12 +11,13 @@ public class handler implements AsyncHandler<Integer> {
     private final AsyncHttpClient client;
     private final TweetThreadTaskProcessor processor;
     private final Proxy proxy;
+    private final TweetTask task;
     private Integer status;
 
-    public handler(AsyncHttpClient client, Proxy proxy, TweetThreadTaskProcessor tweetThreadTaskProcessor) {
-
+    public handler(AsyncHttpClient client, Proxy proxy, TweetTask task, TweetThreadTaskProcessor tweetThreadTaskProcessor) {
         this.client = client;
         this.proxy = proxy;
+        this.task = task;
         this.processor = tweetThreadTaskProcessor;
         this.processor.incrementCoroutineCount();
     }
@@ -26,15 +28,14 @@ public class handler implements AsyncHandler<Integer> {
             this.processor.getScraper().logger.increaseSuccessRequestCount();
             proxy.onSuccess();
             System.out.print("V");
+            processor.getTaskService().successfulTask(task);
         } else {
             this.processor.getScraper().logger.increaseFailedRequestCount();
             proxy.onFailure();
             System.out.print("X");
         }
-
         //try { c.close(); } catch (IOException e) { throw new RuntimeException(e); }
         return State.CONTINUE;
-
     }
 
     @Override
@@ -63,6 +64,7 @@ public class handler implements AsyncHandler<Integer> {
         // Handle exceptions here
         this.processor.getScraper().logger.increaseFailedRequestCount();
         this.processor.decrementCoroutineCount();
+        processor.getTaskService().failTask(task);
         //System.err.println("An error occurred: " + t.getMessage());
     }
 

@@ -2,10 +2,7 @@ package com.scrapium.threads;
 
 import com.scrapium.Scraper;
 import com.scrapium.ThreadBase;
-import com.scrapium.TweetTask;
 import com.scrapium.proxium.ProxyService;
-
-import java.util.concurrent.BlockingQueue;
 
 public class ProxyThread extends ThreadBase implements Runnable {
 

@@ -2,42 +2,31 @@ package com.scrapium.threads;
 
 import com.scrapium.Scraper;
 import com.scrapium.ThreadBase;
-import com.scrapium.TweetTask;
-import com.scrapium.utils.DebugLogger;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.scrapium.tweetium.TaskService;
+import com.scrapium.tweetium.TweetTask;
 
 public class ProducerThread extends ThreadBase implements Runnable {
 
 
     private final Scraper scraper;
-    private final BlockingQueue<TweetTask> taskQueue;
+    private TaskService taskService;
 
-    public ProducerThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
+    private int debug_epoch = 1575072000;
+    private String debug_search = "$BTC";
+
+    public ProducerThread(Scraper scraper, TaskService taskService) {
         this.scraper = scraper;
-        this.taskQueue = taskQueue;
+        this.taskService = taskService;
     }
 
     @Override
     public void run() {
         while (this.running) {
-            if (scraper.tweetQueue.size() < 5000) {
-               // System.out.println("Adding (" + (5000 - scraper.tweetQueue.size()) + ") tasks to queue.");
-                for (int i = 0; i < 5000 - scraper.tweetQueue.size(); i++) {
-                    //DebugLogger.log("Producer: Added item to TaskQueue");
-                    this.taskQueue.add(new TweetTask("Example tweet search"));
 
-                }
-
-            } else {
-               //System.out.println("tweetqueue size = " + scraper.tweetQueue.size());
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
+            if(this.taskService.doesQueueHaveFreeSpace()){
+                TweetTask newTask = new TweetTask(debug_search, debug_epoch, debug_epoch + 30);
+                debug_epoch += 30;
+                this.taskService.addNewTweetTaskEnd(newTask);
             }
         }
     }

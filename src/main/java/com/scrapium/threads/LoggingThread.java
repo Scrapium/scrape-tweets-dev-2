@@ -2,18 +2,16 @@ package com.scrapium.threads;
 
 import com.scrapium.Scraper;
 import com.scrapium.ThreadBase;
-import com.scrapium.TweetTask;
+import com.scrapium.tweetium.TaskService;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LoggingThread extends ThreadBase implements Runnable {
 
     private final Instant scraperStart;
     private Scraper scraper;
-    private BlockingQueue<TweetTask> taskQueue;
     private AtomicInteger coroutineCount;
     private int lastRequestCount = 0;
     public AtomicInteger successRequestCount;
@@ -24,9 +22,10 @@ public class LoggingThread extends ThreadBase implements Runnable {
     private int lastFailedCount;
     private long lastLogEpoch;
 
-    public LoggingThread(Scraper scraper, BlockingQueue<TweetTask> taskQueue) {
+    private TaskService taskService;
+    public LoggingThread(Scraper scraper, TaskService taskService) {
         this.scraper = scraper;
-        this.taskQueue = taskQueue;
+        this.taskService = taskService;
         this.successRequestCount = new AtomicInteger(0);
         this.failedRequestCount = new AtomicInteger(0);
         this.startEpoch = System.currentTimeMillis() / 1000;

@@ -2,6 +2,8 @@ package com.scrapium;
 
 import com.scrapium.proxium.Proxy;
 import com.scrapium.threads.LoggingThread;
+import com.scrapium.tweetium.TaskService;
+import com.scrapium.tweetium.TweetTask;
 import com.scrapium.utils.DebugLogger;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -40,7 +42,7 @@ public class TweetThreadTaskProcessor {
      */
 
     private Scraper scraper;
-    private final BlockingQueue<TweetTask> taskQueue;
+    private TaskService taskService;
     private final int threadID;
     private volatile boolean  tweetThreadRunning;
     private AtomicInteger coroutineCount;
@@ -71,10 +73,10 @@ public class TweetThreadTaskProcessor {
         return ctx;
     }
 
-    public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, BlockingQueue<TweetTask> taskQueue, AtomicInteger coroutineCount) {
+    public TweetThreadTaskProcessor(int threadID, boolean running, Scraper scraper, TaskService taskService, AtomicInteger coroutineCount) {
         this.threadID = threadID;
         this.scraper = scraper;
-        this.taskQueue = taskQueue;
+        this.taskService = taskService;
         this.coroutineCount = coroutineCount;
         this.tweetThreadRunning = running;
 
@@ -119,18 +121,23 @@ public class TweetThreadTaskProcessor {
         if(!DO_CLEANUP || this.lastCleanup.isBefore(Instant.now().minusSeconds(10))){
             DebugLogger.log("TweetThreadTask: Before attempting to increase request count.");
 
-            Proxy proxy = this.scraper.proxyService.getNewProxy();
+            if(this.taskService.hasNextTask()){
+                Proxy proxy = this.scraper.proxyService.getNewProxy();
+                TweetTask task = this.taskService.getNextTask();
 
-            if(proxy != null){
+                System.out.println(task);
 
-                Request request1 = new RequestBuilder("GET")
-                        .setUrl("http://httpforever.com")
-                        .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
-                        .build();
+                if(proxy != null){
 
-                c.executeRequest(request1, new handler(c, proxy, this));
-            } else {
-                System.out.println("No proxies are available!");
+                    Request request1 = new RequestBuilder("GET")
+                            .setUrl("http://httpforever.com")
+                            .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())
+                            .build();
+
+                    c.executeRequest(request1, new handler(c, proxy, task, this));
+                } else {
+                    System.out.println("No proxies are available!");
+                }
             }
         }
     }
@@ -149,5 +156,7 @@ public class TweetThreadTaskProcessor {
     public void incrementCoroutineCount() { this.coroutineCount.incrementAndGet(); }
     public void decrementCoroutineCount() { this.coroutineCount.decrementAndGet(); }
 
-
+    public TaskService getTaskService(){
+        return this.taskService;
+    }
 }

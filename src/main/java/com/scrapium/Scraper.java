@@ -5,6 +5,7 @@ import com.scrapium.threads.LoggingThread;
 import com.scrapium.threads.ProducerThread;
 import com.scrapium.threads.ProxyThread;
 import com.scrapium.threads.TweetThread;
+import com.scrapium.tweetium.TaskService;
 import com.scrapium.utils.DebugLogger;
 
 import java.util.ArrayList;
@@ -13,13 +14,14 @@ import java.util.concurrent.*;
 
 public class Scraper {
 
+
     public ProxyService proxyService;
     public long conSocketTimeout;
     private int consumerCount;
     public int maxCoroutineCount;
 
     private final ExecutorService threadPool;
-    public BlockingQueue<TweetTask> tweetQueue;
+    private TaskService taskService;
 
     //public AtomicInteger coroutineCount;
     public LoggingThread logger;
@@ -39,7 +41,7 @@ public class Scraper {
         this.conSocketTimeout = conSocketTimeout;
 
         this.threadPool = Executors.newFixedThreadPool(consumerCount + 3);
-        this.tweetQueue = new LinkedBlockingQueue<>();
+        this.taskService = new TaskService();
         this.threads = new ArrayList<ThreadBase>();
 
 
@@ -66,7 +68,7 @@ public class Scraper {
 
     public void scrape() {
 
-        this.logger = new LoggingThread(this, tweetQueue);
+        this.logger = new LoggingThread(this, taskService);
         //threads.add(this.logger);
         threadPool.submit(this.logger);
 
@@ -74,13 +76,13 @@ public class Scraper {
         //threads.add(this.proxyThread);
         threadPool.submit(this.proxyThread);
 
-        this.producer = new ProducerThread(this, tweetQueue);
+        this.producer = new ProducerThread(this, taskService);
         //threads.add(this.producer);
         threadPool.submit(this.producer);
 
         for (int i = 0; i < consumerCount; i++) {
             DebugLogger.log("Scraper: Created consumer thread.");
-            TweetThread tweetThread = new TweetThread(i + 1, this, tweetQueue);
+            TweetThread tweetThread = new TweetThread(i + 1, this, taskService);
            // threads.add(tweetThread);
             threadPool.submit(tweetThread);
         }
