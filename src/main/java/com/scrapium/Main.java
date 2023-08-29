@@ -10,10 +10,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
-import org.asynchttpclient.Request;
-import org.asynchttpclient.RequestBuilder;
+import org.asynchttpclient.*;
 import org.asynchttpclient.proxy.ProxyServer;
 
 import java.io.IOException;
@@ -26,6 +23,9 @@ import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -48,7 +48,7 @@ public class Main {
         //Map<String, String> headers = new HashMap<>();
         HttpHeaders header1 = new DefaultHttpHeaders();
 
-        header1.set("User-Agent", "Twitter-iPhone/9.63 iOS/15.7.6 (Apple;iPhone8,4;;;;;1;2015)")
+        header1.set("User-Agent", "Twitter-iPhone/9.63 iOS/15.7.6 (Apple;iPhone8,4;;;;;1;2015)");
         //headers.put("User-Agent", "Twitter-iPhone/9.63 iOS/15.7.6 (Apple;iPhone8,4;;;;;1;2015)");
 
         UUID uuid = UUID.randomUUID();
@@ -109,11 +109,24 @@ public class Main {
 
 
         Request request1 = new RequestBuilder("GET")
-                .setUrl("http://httpforever.com")
+                .setUrl(finalUrl)
                 .setHeaders(header1)
                 .build();
 
-        client.executeRequest(request1, new handler(c, proxy, task, this));
+        System.out.println(finalUrl);
+
+        try {
+            CompletableFuture<Response> future = client.executeRequest(request1).toCompletableFuture();
+            Response response = null;
+            response = future.get();
+            System.out.println(response.getStatusCode());
+            client.close();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+
 
         
     }
