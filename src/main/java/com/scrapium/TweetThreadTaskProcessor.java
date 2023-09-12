@@ -125,10 +125,10 @@ public class TweetThreadTaskProcessor {
                 Proxy proxy = this.scraper.proxyService.getNewProxy();
                 TweetTask task = this.taskService.getNextTask();
 
-                System.out.println(task);
 
                 if(proxy != null){
 
+                    // Debugging version only makes debug requests!
                     Request request1 = new RequestBuilder("GET")
                             .setUrl("http://httpforever.com")
                             .setProxyServer(new ProxyServer.Builder(proxy.getIP(), proxy.getPort()).build())

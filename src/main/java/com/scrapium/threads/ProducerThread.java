@@ -13,12 +13,10 @@ public class ProducerThread extends ThreadBase implements Runnable {
 
     private int debug_epoch = 1575072000;
     private String debug_search = "$BTC";
-
     public ProducerThread(Scraper scraper, TaskService taskService) {
         this.scraper = scraper;
         this.taskService = taskService;
     }
-
     @Override
     public void run() {
         while (this.running) {
