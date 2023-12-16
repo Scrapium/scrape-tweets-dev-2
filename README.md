@@ -1,3 +1,5 @@
+<<This code does not currently work due to Twitter restrictions, but can be updated (testing mobile repo)>>
+
 # scrape-tweets-dev-2-debug
 Debug development repo for scraping tweets and market data via RDS. Using optimisations techniques such as (Threading, asynchronous I/O, non-blocking I/O - ConcurrentLinkedQueues, and runnable tasks for making requests and saving tweets to the database. (Rewritten in Java)
 
